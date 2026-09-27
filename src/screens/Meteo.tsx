@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Linking, ScrollView, View } from 'react-native';
+import { APERCU, previsionExemple } from '../lib/apercu';
 import { formatDate } from '../lib/defaults';
 import type { Site } from '../lib/types';
 import { chargerPrevision, evaluer, pointCardinal, type HeureMeteo, type Verdict } from '../lib/weather';
@@ -58,7 +59,7 @@ function Previsions({ site }: { site: Site }) {
     const ctrl = new AbortController();
     setHeures(null);
     setErreur(null);
-    chargerPrevision(site, ctrl.signal)
+    (APERCU ? Promise.resolve(previsionExemple()) : chargerPrevision(site, ctrl.signal))
       .then(setHeures)
       .catch((e) => !ctrl.signal.aborted && setErreur(e instanceof Error ? e.message : String(e)));
     return () => ctrl.abort();
@@ -76,6 +77,7 @@ function Previsions({ site }: { site: Site }) {
   const jours = [...new Set(heures.map((h) => h.time.slice(0, 10)))];
   return (
     <>
+      {APERCU && <Alerte niveau="orange" texte="Aperçu : prévisions fictives. L’app installée affiche les vraies prévisions." />}
       <T doux>
         Décollage {site.altitude} m · orientations {site.orientations.join(', ') || '—'}
       </T>

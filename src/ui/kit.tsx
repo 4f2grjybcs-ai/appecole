@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { APERCU } from '../lib/apercu';
 import {
   Alert,
   Platform,
@@ -145,6 +146,7 @@ const s = StyleSheet.create({
 
 /** Confirmation compatible mobile et web. */
 export function confirmer(message: string): Promise<boolean> {
+  if (APERCU) return Promise.resolve(true);
   if (Platform.OS === 'web') return Promise.resolve(globalThis.confirm?.(message) ?? true);
   return new Promise((ok) =>
     Alert.alert('Confirmation', message, [
@@ -155,6 +157,7 @@ export function confirmer(message: string): Promise<boolean> {
 }
 
 export function informer(message: string) {
+  if (APERCU) return;
   if (Platform.OS === 'web') globalThis.alert?.(message);
   else Alert.alert('', message);
 }
