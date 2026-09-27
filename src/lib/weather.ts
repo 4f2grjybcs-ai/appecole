@@ -17,7 +17,10 @@ export type Verdict = 'favorable' | 'limite' | 'defavorable';
 
 export interface Evaluation {
   verdict: Verdict;
+  /** Détail chiffré de chaque problème */
   raisons: string[];
+  /** Libellés courts, sans chiffres (pour un résumé sur la journée) */
+  motifs: string[];
 }
 
 const ORIENTATION_DEG: Record<Orientation, number> = {
@@ -45,24 +48,24 @@ export function ventDansOrientation(direction: number, site: Site, tolerance: nu
 }
 
 export function evaluer(h: HeureMeteo, site: Site, s: SeuilsMeteo): Evaluation {
-  const rouge: string[] = [];
-  const orange: string[] = [];
+  const rouge: [string, string][] = [];
+  const orange: [string, string][] = [];
 
-  if (h.precipitation > 0.2) rouge.push(`Précipitations ${h.precipitation.toFixed(1)} mm`);
-  if (h.vent > s.ventMaxKmh) rouge.push(`Vent ${Math.round(h.vent)} km/h > ${s.ventMaxKmh}`);
-  else if (h.vent > s.ventMaxKmh * 0.8) orange.push(`Vent ${Math.round(h.vent)} km/h proche du max`);
-  if (h.rafales > s.rafalesMaxKmh) rouge.push(`Rafales ${Math.round(h.rafales)} km/h > ${s.rafalesMaxKmh}`);
+  if (h.precipitation > 0.2) rouge.push(['Pluie', `Précipitations ${h.precipitation.toFixed(1)} mm`]);
+  if (h.vent > s.ventMaxKmh) rouge.push(['Vent trop fort', `Vent ${Math.round(h.vent)} km/h > ${s.ventMaxKmh}`]);
+  else if (h.vent > s.ventMaxKmh * 0.8) orange.push(['Vent soutenu', `Vent ${Math.round(h.vent)} km/h proche du max`]);
+  if (h.rafales > s.rafalesMaxKmh) rouge.push(['Rafales fortes', `Rafales ${Math.round(h.rafales)} km/h > ${s.rafalesMaxKmh}`]);
   if (h.rafales - h.vent > s.ecartRafalesMaxKmh)
-    orange.push(`Vent irrégulier (écart rafales ${Math.round(h.rafales - h.vent)} km/h)`);
+    orange.push(['Vent irrégulier', `Écart rafales ${Math.round(h.rafales - h.vent)} km/h`]);
   if (h.ventAltitude > s.ventAltitudeMaxKmh)
-    rouge.push(`Vent en altitude ${Math.round(h.ventAltitude)} km/h > ${s.ventAltitudeMaxKmh}`);
+    rouge.push(['Vent fort en altitude', `Vent en altitude ${Math.round(h.ventAltitude)} km/h > ${s.ventAltitudeMaxKmh}`]);
   if (h.vent >= 5 && !ventDansOrientation(h.direction, site, s.toleranceDirectionDeg))
-    orange.push(`Vent de ${pointCardinal(h.direction)} hors orientation du décollage`);
-  if (h.cape > 1000) orange.push(`Instabilité (CAPE ${Math.round(h.cape)}) – risque orageux`);
+    orange.push(['Vent hors orientation', `Vent de ${pointCardinal(h.direction)} hors orientation du décollage`]);
+  if (h.cape > 1000) orange.push(['Instabilité / orages', `CAPE ${Math.round(h.cape)} J/kg – risque orageux`]);
 
-  if (rouge.length) return { verdict: 'defavorable', raisons: [...rouge, ...orange] };
-  if (orange.length) return { verdict: 'limite', raisons: orange };
-  return { verdict: 'favorable', raisons: [] };
+  const verdict: Verdict = rouge.length ? 'defavorable' : orange.length ? 'limite' : 'favorable';
+  const tous = [...rouge, ...orange];
+  return { verdict, motifs: tous.map((x) => x[0]), raisons: tous.map((x) => x[1]) };
 }
 
 const HOURLY = [
