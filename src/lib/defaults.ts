@@ -13,7 +13,7 @@ export const REGLAGES_DEFAUT: Reglages = {
   },
   exigences: EXIGENCES_DEFAUT,
   etapes: ETAPES,
-  tarifs: { grandVol: 0, penteEcole: 0 },
+  tarifs: { grandVol: 0, penteEcole: 0, navette: 0 },
 };
 
 export function donneesVides(): AppData {
@@ -74,7 +74,10 @@ export function normaliser(d: AppData): AppData {
       ...d.reglages,
       etapes: d.reglages.etapes ?? ETAPES,
       tarifs: { ...REGLAGES_DEFAUT.tarifs, ...d.reglages.tarifs },
-      exigences: { ...EXIGENCES_DEFAUT, ...d.reglages.exigences },
+      exigences: {
+        grandsVolsMin: d.reglages.exigences?.grandsVolsMin ?? EXIGENCES_DEFAUT.grandsVolsMin,
+        sitesDifferentsMin: d.reglages.exigences?.sitesDifferentsMin ?? EXIGENCES_DEFAUT.sitesDifferentsMin,
+      },
       sites: d.reglages.sites.map((s) => ({ ...s, type: s.type ?? 'decollage', orientations: s.orientations ?? [] })),
     },
   };

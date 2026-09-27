@@ -34,7 +34,8 @@ export function donneesDemo(): AppData {
   vols.push(
     { id: 'v-lea-p', eleveId: 'e-lea', date: jour(-70), decollageId: 'pente', atterrissageId: 'pente-bas', type: 'pente', nombre: 25, moniteurId: 'm-marc', saisiPar: 'moniteur', paiement: { paye: true, montant: 180, moyen: 'carte', moniteurId: 'm-marc', date: jour(-70) } },
     { id: 'v-tom-p', eleveId: 'e-tom', date: jour(-5), decollageId: 'pente', atterrissageId: 'pente-bas', type: 'pente', nombre: 12, moniteurId: 'm-anna', saisiPar: 'eleve' },
-    { id: 'v-lea-ajd', eleveId: 'e-lea', date: jour(0), decollageId: 'amisbuehl', atterrissageId: 'hoehematte', type: 'altitude', nombre: 2, moniteurId: 'm-marc', saisiPar: 'eleve', remarques: 'Deux vols, 360 travaillés' },
+    { id: 'v-lea-ajd', eleveId: 'e-lea', date: jour(0), decollageId: 'amisbuehl', atterrissageId: 'hoehematte', type: 'altitude', nombre: 2, navettes: 2, moniteurId: 'm-marc', saisiPar: 'eleve', remarques: 'Deux vols, 360 travaillés' },
+    { id: 'v-lea-ajd2', eleveId: 'e-lea', date: jour(0), decollageId: 'niesen', atterrissageId: 'wimmis', type: 'altitude', nombre: 1, navettes: 1, moniteurId: 'm-marc', saisiPar: 'eleve' },
     { id: 'v-tom-ajd', eleveId: 'e-tom', date: jour(0), decollageId: 'pente', atterrissageId: 'pente-bas', type: 'pente', nombre: 8, moniteurId: 'm-marc', saisiPar: 'moniteur', paiement: { paye: true, montant: 180, moyen: 'twint', moniteurId: 'm-marc', date: jour(0) } },
   );
 
@@ -83,7 +84,7 @@ export function donneesDemo(): AppData {
     reglages: {
       ...REGLAGES_DEFAUT,
       ecoleNom: 'École de démonstration',
-      tarifs: { grandVol: 45, penteEcole: 180 },
+      tarifs: { grandVol: 45, penteEcole: 180, navette: 10 },
       sites: [
         { id: 'amisbuehl', type: 'decollage', nom: 'Amisbühl (Beatenberg)', lat: 46.6978, lon: 7.8008, altitude: 1350, orientations: ['S', 'SE', 'SW'], atterrissageIds: ['hoehematte'] },
         { id: 'niesen', type: 'decollage', nom: 'Niesen', lat: 46.6451, lon: 7.6512, altitude: 2330, orientations: ['E', 'SE'], atterrissageIds: ['wimmis'] },

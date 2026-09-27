@@ -41,9 +41,13 @@ export function totaux(vols: Vol[]): Totaux {
   };
 }
 
-/** Montant proposé : prix par grand vol × nombre, ou prix d'une journée de pente école. */
-export function montantPropose(v: Pick<Vol, 'type' | 'nombre'>, t: Tarifs): number | undefined {
-  const m = v.type === 'altitude' ? t.grandVol * v.nombre : t.penteEcole;
+/**
+ * Montant proposé : prix par grand vol × nombre (ou prix d'une journée de pente école),
+ * plus les navettes.
+ */
+export function montantPropose(v: Pick<Vol, 'type' | 'nombre' | 'navettes'>, t: Tarifs): number | undefined {
+  const base = v.type === 'altitude' ? t.grandVol * v.nombre : t.penteEcole;
+  const m = base + (v.navettes ?? 0) * (t.navette ?? 0);
   return m > 0 ? m : undefined;
 }
 

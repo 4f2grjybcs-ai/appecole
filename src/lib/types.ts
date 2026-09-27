@@ -55,6 +55,8 @@ export interface Vol {
   type: TypeVol;
   /** Nombre de vols (utile pour les séries en pente école) */
   nombre: number;
+  /** Nombre de navettes (montées en véhicule) utilisées */
+  navettes?: number;
   moniteurId?: Id;
   conditions?: string;
   remarques?: string;
@@ -116,7 +118,6 @@ export interface SeuilsMeteo {
 }
 
 export interface Exigences {
-  volsPenteMin: number;
   grandsVolsMin: number;
   /** Décollages différents en grands vols */
   sitesDifferentsMin: number;
@@ -150,6 +151,8 @@ export interface Tarifs {
   grandVol: number;
   /** Prix d'une journée de pente école */
   penteEcole: number;
+  /** Prix d'une navette */
+  navette: number;
 }
 
 export interface AppData {

@@ -45,6 +45,7 @@ export function carnetHtml(eleve: Eleve, data: AppData, dateExport: string): str
         <td>${v.type === 'altitude' ? 'Grand vol' : 'Pente école'}</td>
         <td class="num">${v.nombre}</td>
         <td class="num">${v.type === 'altitude' ? cumulGrands : cumulPente}</td>
+        <td class="num">${v.navettes ?? ''}</td>
         <td>${nomSite(v.decollageId)}</td>
         <td>${nomSite(v.atterrissageId)}</td>
         <td>${esc(moniteur(v.paiement?.moniteurId ?? v.moniteurId))}</td>
@@ -69,7 +70,11 @@ export function carnetHtml(eleve: Eleve, data: AppData, dateExport: string): str
     )
     .join('');
 
-  const resume = p.criteres
+  const resume = `<div class="crit">
+        <div class="lib">Pente école</div>
+        <div class="val">${p.volsPente} <small>vols</small></div>
+        <div class="etat">&nbsp;</div>
+      </div>` + p.criteres
     .map(
       (c) => `<div class="crit ${c.ok ? 'ok' : ''}">
         <div class="lib">${esc(c.libelle)}</div>
@@ -146,7 +151,7 @@ export function carnetHtml(eleve: Eleve, data: AppData, dateExport: string): str
   ${
     vols.length
       ? `<table>
-    <thead><tr><th>N°</th><th>Date</th><th>Type</th><th>Vols</th><th>Cumul</th><th>Décollage</th><th>Atterrissage</th><th>Moniteur</th><th>Remarques</th></tr></thead>
+    <thead><tr><th>N°</th><th>Date</th><th>Type</th><th>Vols</th><th>Cumul</th><th>Navettes</th><th>Décollage</th><th>Atterrissage</th><th>Moniteur</th><th>Remarques</th></tr></thead>
     <tbody>${lignesVols}</tbody>
   </table>`
       : '<p class="vide">Aucun vol validé.</p>'

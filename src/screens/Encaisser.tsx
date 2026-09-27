@@ -50,7 +50,10 @@ export function Encaisser({ eleveId }: { eleveId: Id }) {
                   <T gras>{actif ? '☑' : '☐'} {formatDate(v.date)}</T>
                   <T gras>{formatCHF(prixVol(v, data.reglages.tarifs))}</T>
                 </Ligne>
-                <T>{v.nombre} × {v.type === 'altitude' ? 'grand vol' : 'pente école'}</T>
+                <T>
+                  {v.nombre} × {v.type === 'altitude' ? 'grand vol' : 'pente école'}
+                  {v.navettes ? ` · 🚐 ${v.navettes} navette${v.navettes > 1 ? 's' : ''}` : ''}
+                </T>
                 <T doux>{nomSite(v.decollageId)} → {nomSite(v.atterrissageId)}</T>
               </Carte>
             );

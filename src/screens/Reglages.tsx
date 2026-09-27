@@ -16,10 +16,10 @@ const CHAMPS_SEUILS: { cle: keyof SeuilsMeteo; libelle: string }[] = [
 const CHAMPS_TARIFS: { cle: keyof Tarifs; libelle: string }[] = [
   { cle: 'grandVol', libelle: 'Prix d’un grand vol (CHF)' },
   { cle: 'penteEcole', libelle: 'Prix d’une journée de pente école (CHF)' },
+  { cle: 'navette', libelle: 'Prix d’une navette (CHF)' },
 ];
 
 const CHAMPS_EXIGENCES: { cle: keyof Exigences; libelle: string }[] = [
-  { cle: 'volsPenteMin', libelle: 'Vols en pente école minimum' },
   { cle: 'grandsVolsMin', libelle: 'Grands vols minimum' },
   { cle: 'sitesDifferentsMin', libelle: 'Sites (décollages) différents minimum' },
 ];

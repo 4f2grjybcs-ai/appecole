@@ -3,21 +3,23 @@
 Application mobile (iPhone et Android) pour gérer une école de parapente en Suisse,
 selon les directives de formation FSVL.
 
-- **Carnet de vol virtuel** : l'élève note ses vols (pente école ou grand vol, décollage → atterrissage).
-  Le total à payer se calcule automatiquement selon les tarifs de l'école.
+- **Carnet de vol virtuel** : l'élève note ses vols (pente école ou grand vol, décollage → atterrissage,
+  navettes), y compris plusieurs décollages différents le même jour.
+  Le total à payer (vols + navettes) se calcule automatiquement selon les tarifs de l'école.
 - **Encaissement et validation** : le moniteur du jour encaisse (montant, moyen de paiement) et valide
   les vols en une fois ; seuls les vols validés entrent dans le carnet et comptent dans la progression.
 - **Export PDF du carnet** avec résumé, vols, compétences et cases de signature (élève, moniteur),
   à présenter pour l'inscription à l'examen.
 - **Moniteurs** : fiches élèves, validation des compétences, onglet Vols (à encaisser, total du jour),
   planning des séances, décollages et atterrissages, liste de compétences modifiable, tarifs, réglages.
-- **Progression** en 4 catégories : pente école, grands vols, sites différents, compétences acquises.
+- **Progression** : vols en pente école (nombre, sans minimum), grands vols, sites différents,
+  compétences acquises.
 - **Coin météo** : prévisions heure par heure pour chaque site (vent, rafales, vent vers 1500 m,
   pluie, instabilité), avec une indication favorable / limite / défavorable selon les seuils de
   l'école et l'orientation du décollage. Données Open-Meteo (modèles MeteoSwiss), sans clé d'API.
 - **Alertes** : autorisation d'élève qui expire dans les 30 jours.
 
-> ⚠️ Les exigences avant l'examen pratique (30 vols en pente école, 40 grands vols, 5 sites) et la
+> ⚠️ Les exigences avant l'examen pratique (40 grands vols, 5 sites différents) et la
 > liste des compétences sont des valeurs de départ à vérifier avec le règlement FSVL en vigueur.
 > Les moniteurs les modifient dans **Réglages**.
 

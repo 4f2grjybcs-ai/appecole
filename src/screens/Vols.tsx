@@ -83,6 +83,7 @@ export function Vols() {
             </T>
           </Ligne>
           <T doux>{nomSite(v.decollageId)} → {nomSite(v.atterrissageId)}</T>
+          {!!v.navettes && <T doux>🚐 {v.navettes} navette{v.navettes > 1 ? 's' : ''}</T>}
           <Ligne style={{ justifyContent: 'space-between' }}>
             <StatutPaiement vol={v} />
             {v.saisiPar === 'eleve' && <T doux taille={12}>noté par l’élève</T>}

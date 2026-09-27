@@ -28,11 +28,11 @@ describe('progression', () => {
       { id: '5', eleveId: 'e1', date: '2026-02-04', decollageId: 'z', type: 'altitude' as const, nombre: 7 },
       { id: '4', eleveId: 'autre', date: '2026-02-03', decollageId: 'c', type: 'altitude' as const, nombre: 5, ...P },
     ];
-    const p = calculerProgression(eleve, vols, [], { volsPenteMin: 10, grandsVolsMin: 3, sitesDifferentsMin: 2 }, ETAPES);
+    const p = calculerProgression(eleve, vols, [], { grandsVolsMin: 3, sitesDifferentsMin: 2 }, ETAPES);
     expect(p.grandsVols).toBe(3);
     expect(p.volsPente).toBe(10);
-    expect(p.criteres.map((c) => c.libelle)).toEqual(['Pente école', 'Grands vols', 'Sites différents', 'Compétences acquises']);
-    expect(p.criteres.slice(0, 3).every((c) => c.ok)).toBe(true);
+    expect(p.criteres.map((c) => c.libelle)).toEqual(['Grands vols', 'Sites différents', 'Compétences acquises']);
+    expect(p.criteres.slice(0, 2).every((c) => c.ok)).toBe(true);
     expect(p.pretExamenPratique).toBe(false);
   });
 
@@ -42,7 +42,7 @@ describe('progression', () => {
       { id: '1', eleveId: 'e1', date: '2026-02-01', decollageId: 'a', type: 'altitude' as const, nombre: 1, ...P },
       { id: '2', eleveId: 'e1', date: '2026-01-20', type: 'pente' as const, nombre: 5, ...P },
     ];
-    const p = calculerProgression(eleve, vols, validations, { volsPenteMin: 5, grandsVolsMin: 1, sitesDifferentsMin: 1 }, ETAPES);
+    const p = calculerProgression(eleve, vols, validations, { grandsVolsMin: 1, sitesDifferentsMin: 1 }, ETAPES);
     expect(p.pretExamenPratique).toBe(true);
     expect(p.pourcentage).toBe(1);
   });
@@ -136,8 +136,8 @@ describe('données', () => {
       { eleveId: 'e1', competenceId: 'k1', niveau: 'acquis' as const, date: '2026-01-01' },
       { eleveId: 'e1', competenceId: 'supprimee', niveau: 'acquis' as const, date: '2026-01-01' },
     ];
-    const p = calculerProgression(eleve, [], validations, { volsPenteMin: 0, grandsVolsMin: 0, sitesDifferentsMin: 0 }, etapes);
-    expect(p.criteres[3]).toMatchObject({ actuel: 1, requis: 2 });
+    const p = calculerProgression(eleve, [], validations, { grandsVolsMin: 0, sitesDifferentsMin: 0 }, etapes);
+    expect(p.criteres[2]).toMatchObject({ actuel: 1, requis: 2 });
   });
 
   it('complète les réglages anciens (compétences, exigences) et retire l’assurance', () => {
@@ -149,7 +149,7 @@ describe('données', () => {
     const d = normaliser(ancien);
     expect(d.reglages.etapes).toBe(ETAPES);
     expect(d.reglages.exigences.grandsVolsMin).toBe(12);
-    expect(d.reglages.exigences.volsPenteMin).toBe(30);
+    expect(d.reglages.exigences).toEqual({ grandsVolsMin: 12, sitesDifferentsMin: 3 });
     expect('assuranceValidite' in d.eleves[0]).toBe(false);
   });
 });
@@ -174,10 +174,12 @@ describe('paiements', () => {
   });
 
   it('propose un montant selon les tarifs', () => {
-    const tarifs = { grandVol: 45, penteEcole: 180 };
+    const tarifs = { grandVol: 45, penteEcole: 180, navette: 10 };
     expect(montantPropose({ type: 'altitude', nombre: 2 }, tarifs)).toBe(90);
     expect(montantPropose({ type: 'pente', nombre: 8 }, tarifs)).toBe(180);
-    expect(montantPropose({ type: 'altitude', nombre: 1 }, { grandVol: 0, penteEcole: 0 })).toBeUndefined();
+    expect(montantPropose({ type: 'altitude', nombre: 1 }, { grandVol: 0, penteEcole: 0, navette: 0 })).toBeUndefined();
+    expect(montantPropose({ type: 'altitude', nombre: 2, navettes: 2 }, tarifs)).toBe(110);
+    expect(montantPropose({ type: 'pente', nombre: 8, navettes: 1 }, tarifs)).toBe(190);
   });
 
   it('formate les francs suisses', () => {
@@ -186,7 +188,7 @@ describe('paiements', () => {
   });
 
   it('calcule le total à payer et valide les vols en une fois', () => {
-    const tarifs = { grandVol: 45, penteEcole: 180 };
+    const tarifs = { grandVol: 45, penteEcole: 180, navette: 10 };
     const vols = [
       { id: 'a', eleveId: 'e1', date: '2026-09-27', type: 'altitude', nombre: 2 },
       { id: 'b', eleveId: 'e1', date: '2026-09-27', type: 'pente', nombre: 6 },

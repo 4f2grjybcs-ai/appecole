@@ -52,7 +52,6 @@ export function calculerProgression(
   });
 
   const criteres = [
-    critere('Pente école', volsPente, exigences.volsPenteMin),
     critere('Grands vols', grandsVols, exigences.grandsVolsMin),
     critere('Sites différents', decollages, exigences.sitesDifferentsMin),
     critere('Compétences acquises', acquises, competences.length),

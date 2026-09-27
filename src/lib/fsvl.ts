@@ -75,7 +75,6 @@ export const BRANCHES_THEORIE = [
 ];
 
 export const EXIGENCES_DEFAUT: Exigences = {
-  volsPenteMin: 30,
   grandsVolsMin: 40,
   sitesDifferentsMin: 5,
 };

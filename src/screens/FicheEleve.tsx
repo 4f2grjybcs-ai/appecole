@@ -58,6 +58,7 @@ export function FicheEleve({ id, lectureSeule }: { id: Id; lectureSeule?: boolea
       </Ligne>
       <T doux>{nomSite(v.decollageId)} → {nomSite(v.atterrissageId)}</T>
       <T doux>Moniteur : {nomMoniteur(v.moniteurId)}</T>
+      {!!v.navettes && <T doux>🚐 {v.navettes} navette{v.navettes > 1 ? 's' : ''}</T>}
       {!!v.conditions && <T doux>Conditions : {v.conditions}</T>}
       {!!v.remarques && <T>{v.remarques}</T>}
       <Ligne style={{ justifyContent: 'space-between' }}>
@@ -108,6 +109,12 @@ export function FicheEleve({ id, lectureSeule }: { id: Id; lectureSeule?: boolea
               {p.pretExamenPratique ? '✅ Prêt pour l’examen pratique' : `Progression globale ${Math.round(p.pourcentage * 100)} %`}
             </T>
             <Barre valeur={p.pourcentage} couleur={p.pretExamenPratique ? C.vert : C.primaire} />
+          </Carte>
+          <Carte>
+            <Ligne style={{ justifyContent: 'space-between' }}>
+              <T>Pente école</T>
+              <T gras>{p.volsPente} vols</T>
+            </Ligne>
           </Carte>
           {p.criteres.map((c) => (
             <Carte key={c.libelle}>
