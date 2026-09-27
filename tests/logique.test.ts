@@ -1,16 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { alertesEleve } from '../src/lib/alertes';
-import { dateValide, donneesVides } from '../src/lib/defaults';
+import { dateValide, donneesVides, normaliser } from '../src/lib/defaults';
 import { donneesDemo } from '../src/lib/demo';
-import { TOUTES_COMPETENCES } from '../src/lib/fsvl';
+import { ETAPES, TOUTES_COMPETENCES } from '../src/lib/fsvl';
 import { calculerProgression, joursAvant } from '../src/lib/progress';
 import type { Eleve, Site } from '../src/lib/types';
 import { ecartAngulaire, evaluer, parserPrevision, pointCardinal, urlPrevision, type HeureMeteo } from '../src/lib/weather';
 import { appliquer, retirer } from '../src/data/store';
+import { formatCHF, montantPropose, totaux } from '../src/lib/paiements';
 import { REGLAGES_DEFAUT } from '../src/lib/defaults';
 
 const eleve: Eleve = { id: 'e1', prenom: 'A', nom: 'B', dateDebut: '2026-01-01', examenTheorique: { branches: {} }, actif: true };
-const site: Site = { id: 's', nom: 'S', lat: 46.7, lon: 7.8, altitude: 1300, orientations: ['S'] };
+const site: Site = { id: 's', type: 'decollage', nom: 'S', lat: 46.7, lon: 7.8, altitude: 1300, orientations: ['S'] };
 const calme: HeureMeteo = {
   time: '2026-09-28T10:00', temperature: 15, vent: 8, rafales: 12, direction: 180,
   ventAltitude: 10, directionAltitude: 200, precipitation: 0, nuages: 10, cape: 0,
@@ -19,23 +20,26 @@ const calme: HeureMeteo = {
 describe('progression', () => {
   it('compte grands vols, sites et jours', () => {
     const vols = [
-      { id: '1', eleveId: 'e1', date: '2026-02-01', siteId: 'a', type: 'altitude' as const, nombre: 2 },
-      { id: '2', eleveId: 'e1', date: '2026-02-01', siteId: 'b', type: 'altitude' as const, nombre: 1 },
+      { id: '1', eleveId: 'e1', date: '2026-02-01', decollageId: 'a', type: 'altitude' as const, nombre: 2 },
+      { id: '2', eleveId: 'e1', date: '2026-02-01', decollageId: 'b', type: 'altitude' as const, nombre: 1 },
       { id: '3', eleveId: 'e1', date: '2026-02-02', type: 'pente' as const, nombre: 10 },
-      { id: '4', eleveId: 'autre', date: '2026-02-03', siteId: 'c', type: 'altitude' as const, nombre: 5 },
+      { id: '4', eleveId: 'autre', date: '2026-02-03', decollageId: 'c', type: 'altitude' as const, nombre: 5 },
     ];
-    const p = calculerProgression(eleve, vols, [], { grandsVolsMin: 3, sitesDifferentsMin: 2, joursDeVolMin: 1 });
+    const p = calculerProgression(eleve, vols, [], { volsPenteMin: 10, grandsVolsMin: 3, sitesDifferentsMin: 2 }, ETAPES);
     expect(p.grandsVols).toBe(3);
     expect(p.volsPente).toBe(10);
+    expect(p.criteres.map((c) => c.libelle)).toEqual(['Pente école', 'Grands vols', 'Sites différents', 'Compétences acquises']);
     expect(p.criteres.slice(0, 3).every((c) => c.ok)).toBe(true);
     expect(p.pretExamenPratique).toBe(false);
   });
 
   it('est prêt quand tout est rempli', () => {
-    const e = { ...eleve, examenTheorique: { branches: { aerodynamique: true, meteorologie: true, legislation: true, materiel: true, pratique: true } } };
     const validations = TOUTES_COMPETENCES.map((c) => ({ eleveId: 'e1', competenceId: c.id, niveau: 'acquis' as const, date: '2026-01-01' }));
-    const vols = [{ id: '1', eleveId: 'e1', date: '2026-02-01', siteId: 'a', type: 'altitude' as const, nombre: 1 }];
-    const p = calculerProgression(e, vols, validations, { grandsVolsMin: 1, sitesDifferentsMin: 1, joursDeVolMin: 1 });
+    const vols = [
+      { id: '1', eleveId: 'e1', date: '2026-02-01', decollageId: 'a', type: 'altitude' as const, nombre: 1 },
+      { id: '2', eleveId: 'e1', date: '2026-01-20', type: 'pente' as const, nombre: 5 },
+    ];
+    const p = calculerProgression(eleve, vols, validations, { volsPenteMin: 5, grandsVolsMin: 1, sitesDifferentsMin: 1 }, ETAPES);
     expect(p.pretExamenPratique).toBe(true);
     expect(p.pourcentage).toBe(1);
   });
@@ -46,8 +50,9 @@ describe('progression', () => {
   });
 
   it('signale les échéances proches ou dépassées', () => {
-    const a = alertesEleve({ ...eleve, assuranceValidite: '2026-09-01', permisEleveValidite: '2026-10-10' }, new Date('2026-09-27T12:00:00Z'));
-    expect(a.map((x) => x.niveau)).toEqual(['rouge', 'orange']);
+    const ajd = new Date('2026-09-27T12:00:00Z');
+    expect(alertesEleve({ ...eleve, permisEleveValidite: '2026-09-01' }, ajd).map((x) => x.niveau)).toEqual(['rouge']);
+    expect(alertesEleve({ ...eleve, permisEleveValidite: '2026-10-10' }, ajd).map((x) => x.niveau)).toEqual(['orange']);
   });
 });
 
@@ -97,7 +102,10 @@ describe('données', () => {
   it('les données de démo sont cohérentes', () => {
     const d = donneesDemo();
     const sites = new Set(d.reglages.sites.map((s) => s.id));
-    expect(d.vols.every((v) => !v.siteId || sites.has(v.siteId))).toBe(true);
+    const type = (id?: string) => d.reglages.sites.find((s) => s.id === id)?.type;
+    expect(d.vols.every((v) => type(v.decollageId) === 'decollage' && type(v.atterrissageId) === 'atterrissage')).toBe(true);
+    expect(d.reglages.sites.every((s) => (s.atterrissageIds ?? []).every((a) => type(a) === 'atterrissage'))).toBe(true);
+    expect(sites.size).toBe(d.reglages.sites.length);
     expect(d.vols.every((v) => d.eleves.some((e) => e.id === v.eleveId))).toBe(true);
   });
 
@@ -105,5 +113,72 @@ describe('données', () => {
     expect(dateValide('2026-02-28')).toBe(true);
     expect(dateValide('2026-02-30')).toBe(false);
     expect(dateValide('28.02.2026')).toBe(false);
+  });
+
+  it('migre l’ancien site d’un vol vers son décollage', () => {
+    const ancien = { ...donneesVides(), vols: [{ id: 'v', eleveId: 'e', date: '2026-01-01', type: 'altitude', nombre: 1, siteId: 'x' }] } as never;
+    const d = normaliser(ancien);
+    expect(d.vols[0].decollageId).toBe('x');
+    expect('siteId' in d.vols[0]).toBe(false);
+  });
+
+  it('un atterrissage n’impose pas d’orientation', () => {
+    const att: Site = { ...site, type: 'atterrissage', orientations: [] };
+    expect(evaluer({ ...calme, direction: 0 }, att, REGLAGES_DEFAUT.seuils).verdict).toBe('favorable');
+  });
+
+  it('compte les compétences de la liste modifiée par l’école', () => {
+    const etapes = [{ id: 'x', titre: 'Mon étape', competences: [{ id: 'k1', libelle: 'A' }, { id: 'k2', libelle: 'B' }] }];
+    const validations = [
+      { eleveId: 'e1', competenceId: 'k1', niveau: 'acquis' as const, date: '2026-01-01' },
+      { eleveId: 'e1', competenceId: 'supprimee', niveau: 'acquis' as const, date: '2026-01-01' },
+    ];
+    const p = calculerProgression(eleve, [], validations, { volsPenteMin: 0, grandsVolsMin: 0, sitesDifferentsMin: 0 }, etapes);
+    expect(p.criteres[3]).toMatchObject({ actuel: 1, requis: 2 });
+  });
+
+  it('complète les réglages anciens (compétences, exigences) et retire l’assurance', () => {
+    const ancien = {
+      ...donneesVides(),
+      eleves: [{ ...eleve, assuranceValidite: '2026-01-01' }],
+      reglages: { ...donneesVides().reglages, etapes: undefined, exigences: { grandsVolsMin: 12, sitesDifferentsMin: 3, joursDeVolMin: 4 } },
+    } as never;
+    const d = normaliser(ancien);
+    expect(d.reglages.etapes).toBe(ETAPES);
+    expect(d.reglages.exigences.grandsVolsMin).toBe(12);
+    expect(d.reglages.exigences.volsPenteMin).toBe(30);
+    expect('assuranceValidite' in d.eleves[0]).toBe(false);
+  });
+});
+
+describe('paiements', () => {
+  const vol = (id: string, paiement?: object) =>
+    ({ id, eleveId: 'e1', date: '2026-09-27', type: 'altitude', nombre: 1, paiement }) as never;
+
+  it('totalise les montants encaissés par moyen', () => {
+    const t = totaux([
+      vol('1', { paye: true, montant: 45, moyen: 'twint' }),
+      vol('2', { paye: true, montant: 45, moyen: 'twint' }),
+      vol('3', { paye: true, montant: 180, moyen: 'especes' }),
+      vol('4'),
+    ]);
+    expect(t.total).toBe(270);
+    expect(t.nonPayes).toBe(1);
+    expect(t.parMoyen).toEqual([
+      { moyen: 'especes', montant: 180, nombre: 1 },
+      { moyen: 'twint', montant: 90, nombre: 2 },
+    ]);
+  });
+
+  it('propose un montant selon les tarifs', () => {
+    const tarifs = { grandVol: 45, penteEcole: 180 };
+    expect(montantPropose({ type: 'altitude', nombre: 2 }, tarifs)).toBe(90);
+    expect(montantPropose({ type: 'pente', nombre: 8 }, tarifs)).toBe(180);
+    expect(montantPropose({ type: 'altitude', nombre: 1 }, { grandVol: 0, penteEcole: 0 })).toBeUndefined();
+  });
+
+  it('formate les francs suisses', () => {
+    expect(formatCHF(50)).toBe('CHF 50.–');
+    expect(formatCHF(42.5)).toBe('CHF 42.50');
   });
 });

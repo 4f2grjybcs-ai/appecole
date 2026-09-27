@@ -1,24 +1,14 @@
-import type { Exigences } from './types';
+import type { Competence, Etape, Exigences } from './types';
 
 /**
  * Référentiel de formation parapente selon les directives FSVL.
  *
  * ⚠️ Les valeurs ci-dessous sont des valeurs par défaut destinées à être
  * vérifiées par l'école avec le règlement de formation FSVL en vigueur.
- * Les exigences chiffrées sont modifiables dans Réglages.
+ * Les exigences chiffrées et la liste des compétences sont modifiables dans Réglages.
  */
 
-export interface Competence {
-  id: string;
-  libelle: string;
-}
-
-export interface Etape {
-  id: string;
-  titre: string;
-  competences: Competence[];
-}
-
+/** Liste de compétences proposée au départ ; chaque école l'adapte dans Réglages. */
 export const ETAPES: Etape[] = [
   {
     id: 'sol',
@@ -71,7 +61,9 @@ export const ETAPES: Etape[] = [
   },
 ];
 
-export const TOUTES_COMPETENCES: Competence[] = ETAPES.flatMap((e) => e.competences);
+export const toutesCompetences = (etapes: Etape[]): Competence[] => etapes.flatMap((e) => e.competences);
+
+export const TOUTES_COMPETENCES: Competence[] = toutesCompetences(ETAPES);
 
 /** Branches de l'examen théorique suisse */
 export const BRANCHES_THEORIE = [
@@ -83,7 +75,7 @@ export const BRANCHES_THEORIE = [
 ];
 
 export const EXIGENCES_DEFAUT: Exigences = {
+  volsPenteMin: 30,
   grandsVolsMin: 40,
   sitesDifferentsMin: 5,
-  joursDeVolMin: 10,
 };

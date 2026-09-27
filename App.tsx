@@ -4,11 +4,13 @@ import { ActivityIndicator, BackHandler, Pressable, Text, View } from 'react-nat
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Connexion } from './src/screens/Connexion';
 import { Eleves } from './src/screens/Eleves';
+import { FormCompetences } from './src/screens/FormCompetences';
 import { FicheEleve } from './src/screens/FicheEleve';
 import { FormEleve, FormMoniteur, FormSeance, FormSite, FormVol } from './src/screens/Formulaires';
 import { Meteo } from './src/screens/Meteo';
 import { Planning } from './src/screens/Planning';
 import { Reglages } from './src/screens/Reglages';
+import { Vols } from './src/screens/Vols';
 import { AppProvider, useApp } from './src/state/AppContext';
 import { C } from './src/ui/kit';
 import { NavContext, type Nav, type Route } from './src/ui/nav';
@@ -17,6 +19,7 @@ type Onglet = { id: string; libelle: string; icone: string };
 
 const ONGLETS_MONITEUR: Onglet[] = [
   { id: 'eleves', libelle: 'Élèves', icone: '🎓' },
+  { id: 'vols', libelle: 'Vols', icone: '🪂' },
   { id: 'planning', libelle: 'Planning', icone: '📅' },
   { id: 'meteo', libelle: 'Météo', icone: '🌤' },
   { id: 'reglages', libelle: 'Réglages', icone: '⚙️' },
@@ -119,6 +122,7 @@ function EcranOnglet({ onglet }: { onglet: string }) {
   switch (onglet) {
     case 'eleves': return <Eleves />;
     case 'formation': return <FicheEleve id={session!.id} lectureSeule />;
+    case 'vols': return <Vols />;
     case 'planning': return <Planning />;
     case 'meteo': return <Meteo />;
     case 'reglages': return <Reglages />;
@@ -132,8 +136,9 @@ function EcranPile({ route }: { route: Route }) {
     case 'formEleve': return <FormEleve id={route.id} />;
     case 'formVol': return <FormVol eleveId={route.eleveId} id={route.id} />;
     case 'formSeance': return <FormSeance id={route.id} />;
-    case 'formSite': return <FormSite id={route.id} />;
+    case 'formSite': return <FormSite type={route.type} id={route.id} />;
     case 'formMoniteur': return <FormMoniteur id={route.id} />;
+    case 'formCompetences': return <FormCompetences />;
   }
 }
 

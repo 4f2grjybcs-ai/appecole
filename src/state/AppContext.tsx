@@ -3,7 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { localStore } from '../data/localStore';
 import { appliquer, retirer, type Kind, type RecordOf, type Store } from '../data/store';
 import * as sb from '../data/supabaseStore';
-import { donneesVides } from '../lib/defaults';
+import { donneesVides, normaliser } from '../lib/defaults';
 import { donneesDemo } from '../lib/demo';
 import type { AppData, Session } from '../lib/types';
 
@@ -65,7 +65,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
       setEmailSansEcole(null);
       storeRef.current = sb.supabaseStore(m.ecoleId);
-      setData(await storeRef.current.charger());
+      setData(normaliser(await storeRef.current.charger()));
       setEcoleId(m.ecoleId);
       setSession(m.session);
     } catch (e) {
@@ -77,7 +77,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     (async () => {
       try {
         if (mode === 'local') {
-          setData(await localStore.charger());
+          setData(normaliser(await localStore.charger()));
           const s = await AsyncStorage.getItem(CLE_SESSION_LOCALE);
           if (s) setSession(JSON.parse(s));
         } else if (await sb.utilisateurConnecte()) {
@@ -113,7 +113,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const rafraichir = useCallback(async () => {
     try {
-      setData(await storeRef.current.charger());
+      setData(normaliser(await storeRef.current.charger()));
     } catch (e) {
       signaler(e);
     }

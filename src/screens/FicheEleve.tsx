@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import * as sb from '../data/supabaseStore';
 import { aujourdhui, formatDate } from '../lib/defaults';
-import { BRANCHES_THEORIE, ETAPES } from '../lib/fsvl';
+import { BRANCHES_THEORIE } from '../lib/fsvl';
 import { alertesEleve } from '../lib/alertes';
 import { calculerProgression, niveauCompetence } from '../lib/progress';
 import type { Id, NiveauCompetence } from '../lib/types';
 import { useApp } from '../state/AppContext';
 import { Alerte, Barre, Bouton, C, Carte, Champ, Ecran, informer, Ligne, Puce, T, Titre } from '../ui/kit';
 import { useNav } from '../ui/nav';
+import { StatutPaiement } from './Formulaires';
 
 const SUIVANT: Record<string, NiveauCompetence | undefined> = { none: 'vu', vu: 'acquis', acquis: undefined };
 
@@ -28,7 +29,7 @@ export function FicheEleve({ id, lectureSeule }: { id: Id; lectureSeule?: boolea
     );
   }
 
-  const p = calculerProgression(eleve, data.vols, data.validations, data.reglages.exigences);
+  const p = calculerProgression(eleve, data.vols, data.validations, data.reglages.exigences, data.reglages.etapes);
   const vols = data.vols
     .filter((v) => v.eleveId === id)
     .sort((a, b) => b.date.localeCompare(a.date));
@@ -74,7 +75,6 @@ export function FicheEleve({ id, lectureSeule }: { id: Id; lectureSeule?: boolea
               {p.pretExamenPratique ? '✅ Prêt pour l’examen pratique' : `Progression globale ${Math.round(p.pourcentage * 100)} %`}
             </T>
             <Barre valeur={p.pourcentage} couleur={p.pretExamenPratique ? C.vert : C.primaire} />
-            <T doux taille={13}>{p.volsPente} vols en pente école</T>
           </Carte>
           {p.criteres.map((c) => (
             <Carte key={c.libelle}>
@@ -119,19 +119,24 @@ export function FicheEleve({ id, lectureSeule }: { id: Id; lectureSeule?: boolea
 
       {onglet === 'vols' && (
         <>
-          {!lectureSeule && <Bouton titre="+ Ajouter des vols" onPress={() => nav.ouvrir({ ecran: 'formVol', eleveId: id })} />}
+          <Bouton titre={lectureSeule ? '+ Noter mes vols' : '+ Ajouter des vols'} onPress={() => nav.ouvrir({ ecran: 'formVol', eleveId: id })} />
           {vols.length === 0 && <T doux>Aucun vol enregistré.</T>}
           {vols.map((v) => (
-            <Carte key={v.id} onPress={lectureSeule ? undefined : () => nav.ouvrir({ ecran: 'formVol', eleveId: id, id: v.id })}>
+            <Carte key={v.id} onPress={() => nav.ouvrir({ ecran: 'formVol', eleveId: id, id: v.id })}>
               <Ligne style={{ justifyContent: 'space-between' }}>
                 <T gras>{formatDate(v.date)}</T>
                 <T couleur={v.type === 'altitude' ? C.primaire : C.doux}>
                   {v.nombre} × {v.type === 'altitude' ? 'grand vol' : 'pente école'}
                 </T>
               </Ligne>
-              <T doux>{nomSite(v.siteId)} · {nomMoniteur(v.moniteurId)}</T>
+              <T doux>{nomSite(v.decollageId)} → {nomSite(v.atterrissageId)}</T>
+              <T doux>Moniteur : {nomMoniteur(v.moniteurId)}</T>
               {!!v.conditions && <T doux>Conditions : {v.conditions}</T>}
               {!!v.remarques && <T>{v.remarques}</T>}
+              <Ligne style={{ justifyContent: 'space-between' }}>
+                <StatutPaiement vol={v} />
+                {v.saisiPar === 'eleve' && <T doux taille={12}>noté par l’élève</T>}
+              </Ligne>
             </Carte>
           ))}
         </>
@@ -145,7 +150,7 @@ export function FicheEleve({ id, lectureSeule }: { id: Id; lectureSeule?: boolea
             <Puce texte="Acquis" actif couleur={C.vert} />
           </Ligne>
           {!lectureSeule && <T doux taille={13}>Touchez une compétence pour passer à l’état suivant.</T>}
-          {ETAPES.map((etape) => (
+          {data.reglages.etapes.map((etape) => (
             <View key={etape.id} style={{ gap: 8 }}>
               <Titre>{etape.titre}</Titre>
               <Carte>
@@ -178,7 +183,6 @@ export function FicheEleve({ id, lectureSeule }: { id: Id; lectureSeule?: boolea
             <Info l="E-mail" v={eleve.email} />
             <Info l="Début de formation" v={formatDate(eleve.dateDebut)} />
             <Info l="Moniteur référent" v={nomMoniteur(eleve.moniteurRefId)} />
-            <Info l="Assurance valable jusqu’au" v={formatDate(eleve.assuranceValidite)} />
             <Info l="Autorisation d’élève valable jusqu’au" v={formatDate(eleve.permisEleveValidite)} />
             {!!eleve.notes && !lectureSeule && <Info l="Notes" v={eleve.notes} />}
           </Carte>

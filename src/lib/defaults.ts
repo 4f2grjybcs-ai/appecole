@@ -1,4 +1,4 @@
-import { EXIGENCES_DEFAUT } from './fsvl';
+import { ETAPES, EXIGENCES_DEFAUT } from './fsvl';
 import type { AppData, Reglages } from './types';
 
 export const REGLAGES_DEFAUT: Reglages = {
@@ -12,6 +12,8 @@ export const REGLAGES_DEFAUT: Reglages = {
     toleranceDirectionDeg: 45,
   },
   exigences: EXIGENCES_DEFAUT,
+  etapes: ETAPES,
+  tarifs: { grandVol: 0, penteEcole: 0 },
 };
 
 export function donneesVides(): AppData {
@@ -46,4 +48,34 @@ export function formatDate(s?: string): string {
   if (!s) return '—';
   const [y, m, d] = s.split('-');
   return `${d}.${m}.${y}`;
+}
+
+type Ancien = { siteId?: string };
+
+/**
+ * Met à niveau des données enregistrées avant la distinction décollage / atterrissage :
+ * l'ancien « site » d'un vol ou d'une séance devient son décollage.
+ */
+export function normaliser(d: AppData): AppData {
+  const migrer = <T extends { decollageId?: string }>(x: T & Ancien): T => {
+    if (x.siteId === undefined) return x;
+    const { siteId, ...reste } = x;
+    return { ...(reste as T), decollageId: x.decollageId ?? siteId };
+  };
+  return {
+    ...d,
+    vols: d.vols.map(migrer),
+    seances: d.seances.map(migrer),
+    eleves: d.eleves.map((e) => {
+      const { assuranceValidite: _, ...reste } = e as typeof e & { assuranceValidite?: string };
+      return reste;
+    }),
+    reglages: {
+      ...d.reglages,
+      etapes: d.reglages.etapes ?? ETAPES,
+      tarifs: { ...REGLAGES_DEFAUT.tarifs, ...d.reglages.tarifs },
+      exigences: { ...EXIGENCES_DEFAUT, ...d.reglages.exigences },
+      sites: d.reglages.sites.map((s) => ({ ...s, type: s.type ?? 'decollage', orientations: s.orientations ?? [] })),
+    },
+  };
 }

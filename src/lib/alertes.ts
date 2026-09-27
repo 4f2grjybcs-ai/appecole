@@ -16,7 +16,6 @@ export function alertesEleve(e: Eleve, aujourdhui = new Date()): AlerteEcheance[
     if (j < 0) r.push({ texte: `${libelle} expirée le ${formatDate(date)}`, niveau: 'rouge' });
     else if (j <= 30) r.push({ texte: `${libelle} expire dans ${j} j (${formatDate(date)})`, niveau: 'orange' });
   };
-  verifier('Assurance', e.assuranceValidite);
   verifier('Autorisation d’élève', e.permisEleveValidite);
   return r;
 }

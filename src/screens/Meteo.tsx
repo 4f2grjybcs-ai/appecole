@@ -26,14 +26,23 @@ export function Meteo() {
   return (
     <Ecran titre="Météo">
       {sites.length === 0 ? (
-        <T doux>Ajoutez vos sites de vol dans Réglages pour afficher les prévisions.</T>
+        <T doux>Ajoutez vos décollages et atterrissages dans Réglages pour afficher les prévisions.</T>
       ) : (
         <>
-          <Ligne>
-            {sites.map((s) => (
-              <Puce key={s.id} texte={s.nom} actif={site?.id === s.id} onPress={() => setSiteId(s.id)} />
-            ))}
-          </Ligne>
+          {(['decollage', 'atterrissage'] as const).map((type) => {
+            const liste = sites.filter((s) => s.type === type);
+            if (liste.length === 0) return null;
+            return (
+              <View key={type} style={{ gap: 6 }}>
+                <T doux taille={13}>{type === 'decollage' ? '🛫 Décollages' : '🛬 Atterrissages'}</T>
+                <Ligne>
+                  {liste.map((s) => (
+                    <Puce key={s.id} texte={s.nom} actif={site?.id === s.id} onPress={() => setSiteId(s.id)} />
+                  ))}
+                </Ligne>
+              </View>
+            );
+          })}
           {site && <Previsions site={site} />}
         </>
       )}
@@ -79,7 +88,9 @@ function Previsions({ site }: { site: Site }) {
     <>
       {APERCU && <Alerte niveau="orange" texte="Aperçu : prévisions fictives. L’app installée affiche les vraies prévisions." />}
       <T doux>
-        Décollage {site.altitude} m · orientations {site.orientations.join(', ') || '—'}
+        {site.type === 'decollage'
+          ? `Décollage ${site.altitude} m · orientations ${site.orientations.join(', ') || '—'}`
+          : `Atterrissage ${site.altitude} m`}
       </T>
       {jours.map((j) => {
         const du = heures.filter((h) => h.time.startsWith(j) && HEURES_VOL.includes(parseInt(h.time.slice(11, 13), 10)));

@@ -22,8 +22,6 @@ export interface Eleve {
   email?: string;
   tel?: string;
   numeroFSVL?: string;
-  /** Date de fin de validité de l'assurance RC / accident */
-  assuranceValidite?: string;
   /** Date d'échéance du permis d'élève / carnet de formation */
   permisEleveValidite?: string;
   dateDebut: string;
@@ -36,17 +34,33 @@ export interface Eleve {
 
 export type TypeVol = 'pente' | 'altitude';
 
+export type MoyenPaiement = 'especes' | 'twint' | 'carte' | 'virement' | 'abonnement';
+
+/** Renseigné par le moniteur du jour */
+export interface Paiement {
+  paye: boolean;
+  /** Montant en CHF */
+  montant?: number;
+  moyen?: MoyenPaiement;
+  moniteurId?: Id;
+  date?: string;
+}
+
 export interface Vol {
   id: Id;
   eleveId: Id;
   date: string;
-  siteId?: Id;
+  decollageId?: Id;
+  atterrissageId?: Id;
   type: TypeVol;
   /** Nombre de vols (utile pour les séries en pente école) */
   nombre: number;
   moniteurId?: Id;
   conditions?: string;
   remarques?: string;
+  /** Qui a noté le vol */
+  saisiPar?: 'eleve' | 'moniteur';
+  paiement?: Paiement;
 }
 
 export type NiveauCompetence = 'vu' | 'acquis';
@@ -67,7 +81,8 @@ export interface Seance {
   heureDebut: string;
   heureFin: string;
   titre: string;
-  siteId?: Id;
+  decollageId?: Id;
+  atterrissageId?: Id;
   moniteurId?: Id;
   eleveIds: Id[];
   statut: StatutSeance;
@@ -76,14 +91,19 @@ export interface Seance {
 
 export type Orientation = 'N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW';
 
+export type TypeSite = 'decollage' | 'atterrissage';
+
 export interface Site {
   id: Id;
+  type: TypeSite;
   nom: string;
   lat: number;
   lon: number;
   altitude: number;
-  /** Orientations de décollage (vent favorable) */
+  /** Orientations du décollage (vent favorable). Vide pour un atterrissage. */
   orientations: Orientation[];
+  /** Atterrissages habituels d'un décollage (pré-remplis lors de la saisie d'un vol) */
+  atterrissageIds?: Id[];
 }
 
 export interface SeuilsMeteo {
@@ -96,9 +116,22 @@ export interface SeuilsMeteo {
 }
 
 export interface Exigences {
+  volsPenteMin: number;
   grandsVolsMin: number;
+  /** Décollages différents en grands vols */
   sitesDifferentsMin: number;
-  joursDeVolMin: number;
+}
+
+export interface Competence {
+  id: string;
+  libelle: string;
+}
+
+/** Groupe de compétences (ex. « Pente école », « Grands vols »), modifiable par les moniteurs */
+export interface Etape {
+  id: string;
+  titre: string;
+  competences: Competence[];
 }
 
 export interface Reglages {
@@ -106,6 +139,17 @@ export interface Reglages {
   sites: Site[];
   seuils: SeuilsMeteo;
   exigences: Exigences;
+  /** Liste des compétences de l'école */
+  etapes: Etape[];
+  /** Tarifs proposés par défaut lors de l'encaissement (CHF) */
+  tarifs: Tarifs;
+}
+
+export interface Tarifs {
+  /** Prix d'un grand vol */
+  grandVol: number;
+  /** Prix d'une journée de pente école */
+  penteEcole: number;
 }
 
 export interface AppData {

@@ -3,18 +3,20 @@
 Application mobile (iPhone et Android) pour gérer une école de parapente en Suisse,
 selon les directives de formation FSVL.
 
-- **Moniteurs** : fiches élèves, carnet de vols (pente école et grands vols), validation des
-  compétences, examen théorique par branche, planning des séances, sites de vol, réglages.
-- **Élèves** : leur progression vers l'examen pratique, leurs vols, leurs compétences, leurs séances.
+- **Moniteurs** : fiches élèves, carnet de vols (pente école et grands vols, décollage → atterrissage),
+  validation des compétences, encaissement des vols (payé, montant, moyen de paiement),
+  planning des séances, décollages et atterrissages, liste de compétences modifiable, réglages.
+- **Élèves** : notent eux-mêmes leurs vols ; voient leur progression, leurs compétences, leurs séances
+  et si leurs vols sont payés.
+- **Progression** en 4 catégories : pente école, grands vols, sites différents, compétences acquises.
 - **Coin météo** : prévisions heure par heure pour chaque site (vent, rafales, vent vers 1500 m,
   pluie, instabilité), avec une indication favorable / limite / défavorable selon les seuils de
   l'école et l'orientation du décollage. Données Open-Meteo (modèles MeteoSwiss), sans clé d'API.
-- **Alertes** : assurance ou autorisation d'élève qui expire dans les 30 jours.
+- **Alertes** : autorisation d'élève qui expire dans les 30 jours.
 
-> ⚠️ Les exigences avant l'examen pratique (40 grands vols, 5 sites, 10 jours) et la liste des
-> compétences sont des valeurs par défaut à vérifier avec le règlement FSVL en vigueur.
-> Les exigences chiffrées sont modifiables dans **Réglages**, la liste des compétences dans
-> `src/lib/fsvl.ts`.
+> ⚠️ Les exigences avant l'examen pratique (30 vols en pente école, 40 grands vols, 5 sites) et la
+> liste des compétences sont des valeurs de départ à vérifier avec le règlement FSVL en vigueur.
+> Les moniteurs les modifient dans **Réglages**.
 
 > ℹ️ L'indication météo est une aide : elle ne remplace jamais l'analyse du moniteur sur le terrain.
 
@@ -46,7 +48,13 @@ Le bouton « Charger des données de démonstration » remplit l'app avec des é
 
 Droits d'accès (appliqués côté serveur par les règles RLS de Supabase) :
 les moniteurs lisent et modifient toutes les données de leur école ; un élève ne lit que sa fiche,
-ses vols, ses compétences, les séances où il est inscrit, les moniteurs et les sites.
+ses vols, ses compétences, les séances où il est inscrit, les moniteurs et les sites. Un élève peut
+ajouter et corriger ses propres vols tant que le moniteur n'a pas noté le paiement ; il ne peut pas
+indiquer lui-même un paiement.
+
+Si vous aviez déjà exécuté une version précédente de `schema.sql`, exécutez-le à nouveau : il est
+prévu pour être relancé sans perte de données.
+
 Les notes internes des moniteurs sont masquées dans l'app élève, mais font partie de la fiche
 de l'élève : n'y mettez rien que l'élève ne devrait pas pouvoir lire.
 

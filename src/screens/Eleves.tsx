@@ -28,7 +28,7 @@ export function Eleves() {
       </Ligne>
       {liste.length === 0 && <T doux>Aucun élève.</T>}
       {liste.map((e) => {
-        const p = calculerProgression(e, data.vols, data.validations, data.reglages.exigences);
+        const p = calculerProgression(e, data.vols, data.validations, data.reglages.exigences, data.reglages.etapes);
         const alertes = alertesEleve(e);
         return (
           <Carte key={e.id} onPress={() => nav.ouvrir({ ecran: 'eleve', id: e.id })}>

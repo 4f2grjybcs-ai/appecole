@@ -59,7 +59,8 @@ export function Planning() {
                   <T doux>{s.heureDebut}–{s.heureFin}</T>
                 </Ligne>
                 <T gras couleur={st.couleur}>{st.libelle}</T>
-                {nomSite(s.siteId) && <T doux>📍 {nomSite(s.siteId)}</T>}
+                {nomSite(s.decollageId) && <T doux>🛫 Décollage : {nomSite(s.decollageId)}</T>}
+                {nomSite(s.atterrissageId) && <T doux>🛬 Atterrissage : {nomSite(s.atterrissageId)}</T>}
                 {m && <T doux>Moniteur : {m.prenom} {m.nom}{m.tel ? ` · ${m.tel}` : ''}</T>}
                 {estMoniteur && (
                   <T doux>

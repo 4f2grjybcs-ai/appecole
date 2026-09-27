@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { aujourdhui, dateValide, nouvelId } from '../lib/defaults';
-import type { Eleve, Id, Moniteur, Orientation, Seance, Site, StatutSeance, TypeVol, Vol } from '../lib/types';
+import { aujourdhui, dateValide, formatDate, nouvelId } from '../lib/defaults';
+import { formatCHF, libelleMoyen, montantPropose, MOYENS } from '../lib/paiements';
+import type { Eleve, Id, Moniteur, MoyenPaiement, Orientation, Seance, Site, StatutSeance, TypeSite, TypeVol, Vol } from '../lib/types';
 import { useApp } from '../state/AppContext';
-import { Alerte, Bouton, Carte, Champ, confirmer, Ecran, Ligne, Puce, T, Titre } from '../ui/kit';
+import { Alerte, Bouton, C, Carte, Champ, confirmer, Ecran, Ligne, Puce, T, Titre } from '../ui/kit';
 import { useNav } from '../ui/nav';
 
 function useErreur() {
@@ -12,11 +13,11 @@ function useErreur() {
 
 const dateOuVide = (s?: string) => !s || dateValide(s);
 
-function ChoixMoniteur({ valeur, onChange }: { valeur?: Id; onChange: (id?: Id) => void }) {
+function ChoixMoniteur({ valeur, onChange, libelle = 'Moniteur' }: { valeur?: Id; onChange: (id?: Id) => void; libelle?: string }) {
   const { data } = useApp();
   return (
     <>
-      <T doux taille={13}>Moniteur</T>
+      <T doux taille={13}>{libelle}</T>
       <Ligne>
         {data.moniteurs.map((m) => (
           <Puce key={m.id} texte={m.prenom} actif={valeur === m.id} onPress={() => onChange(valeur === m.id ? undefined : m.id)} />
@@ -26,17 +27,45 @@ function ChoixMoniteur({ valeur, onChange }: { valeur?: Id; onChange: (id?: Id) 
   );
 }
 
-function ChoixSite({ valeur, onChange }: { valeur?: Id; onChange: (id?: Id) => void }) {
+function ChoixSite({ type, valeur, onChange }: { type: TypeSite; valeur?: Id; onChange: (id?: Id) => void }) {
   const { data } = useApp();
-  if (data.reglages.sites.length === 0) return <T doux>Ajoutez des sites dans Réglages.</T>;
+  const sites = data.reglages.sites.filter((s) => s.type === type);
+  const libelle = type === 'decollage' ? 'Décollage' : 'Atterrissage';
   return (
     <>
-      <T doux taille={13}>Site</T>
-      <Ligne>
-        {data.reglages.sites.map((s) => (
-          <Puce key={s.id} texte={s.nom} actif={valeur === s.id} onPress={() => onChange(valeur === s.id ? undefined : s.id)} />
-        ))}
-      </Ligne>
+      <T doux taille={13}>{libelle}</T>
+      {sites.length === 0 ? (
+        <T doux>Ajoutez des {type === 'decollage' ? 'décollages' : 'atterrissages'} dans Réglages.</T>
+      ) : (
+        <Ligne>
+          {sites.map((s) => (
+            <Puce key={s.id} texte={s.nom} actif={valeur === s.id} onPress={() => onChange(valeur === s.id ? undefined : s.id)} />
+          ))}
+        </Ligne>
+      )}
+    </>
+  );
+}
+
+/** Choix décollage + atterrissage ; l'atterrissage habituel du décollage est proposé automatiquement. */
+function ChoixTrajet({ decollageId, atterrissageId, onChange }: {
+  decollageId?: Id;
+  atterrissageId?: Id;
+  onChange: (p: { decollageId?: Id; atterrissageId?: Id }) => void;
+}) {
+  const { data } = useApp();
+  return (
+    <>
+      <ChoixSite
+        type="decollage"
+        valeur={decollageId}
+        onChange={(d) => {
+          const habituels = data.reglages.sites.find((s) => s.id === d)?.atterrissageIds ?? [];
+          const garder = atterrissageId && (habituels.length === 0 || habituels.includes(atterrissageId));
+          onChange({ decollageId: d, atterrissageId: garder ? atterrissageId : habituels[0] });
+        }}
+      />
+      <ChoixSite type="atterrissage" valeur={atterrissageId} onChange={(a) => onChange({ decollageId, atterrissageId: a })} />
     </>
   );
 }
@@ -61,7 +90,7 @@ export function FormEleve({ id }: { id?: Id }) {
 
   const valider = async () => {
     if (!e.prenom.trim() || !e.nom.trim()) return setErreur('Prénom et nom sont obligatoires.');
-    for (const [l, d] of [['Début', e.dateDebut], ['Naissance', e.dateNaissance], ['Assurance', e.assuranceValidite], ['Autorisation', e.permisEleveValidite]] as const)
+    for (const [l, d] of [['Début', e.dateDebut], ['Naissance', e.dateNaissance], ['Autorisation', e.permisEleveValidite]] as const)
       if (!dateOuVide(d)) return setErreur(`${l} : date au format AAAA-MM-JJ.`);
     await enregistrer('eleve', { ...e, prenom: e.prenom.trim(), nom: e.nom.trim() });
     nav.retour();
@@ -80,7 +109,6 @@ export function FormEleve({ id }: { id?: Id }) {
       <Carte>
         <Champ label="N° de membre FSVL" value={e.numeroFSVL ?? ''} onChangeText={(v) => maj({ numeroFSVL: v || undefined })} />
         <Champ label="Début de formation (AAAA-MM-JJ)" value={e.dateDebut} onChangeText={(v) => maj({ dateDebut: v })} />
-        <Champ label="Assurance valable jusqu’au (AAAA-MM-JJ)" value={e.assuranceValidite ?? ''} onChangeText={(v) => maj({ assuranceValidite: v || undefined })} />
         <Champ label="Autorisation d’élève valable jusqu’au (AAAA-MM-JJ)" value={e.permisEleveValidite ?? ''} onChangeText={(v) => maj({ permisEleveValidite: v || undefined })} />
         <ChoixMoniteur valeur={e.moniteurRefId} onChange={(m) => maj({ moniteurRefId: m })} />
         <Champ label="Notes internes (non visibles par l’élève)" value={e.notes ?? ''} onChangeText={(v) => maj({ notes: v || undefined })} multiline />
@@ -119,6 +147,7 @@ export function FormEleve({ id }: { id?: Id }) {
 export function FormVol({ eleveId, id }: { eleveId: Id; id?: Id }) {
   const { data, enregistrer, supprimer, session } = useApp();
   const nav = useNav();
+  const estMoniteur = session?.role === 'moniteur';
   const existant = data.vols.find((v) => v.id === id);
   const [v, setV] = useState<Vol>(
     existant ?? {
@@ -127,23 +156,52 @@ export function FormVol({ eleveId, id }: { eleveId: Id; id?: Id }) {
       date: aujourdhui(),
       type: 'altitude',
       nombre: 1,
-      moniteurId: session?.role === 'moniteur' ? session.id : undefined,
+      moniteurId: estMoniteur ? session.id : undefined,
+      saisiPar: estMoniteur ? 'moniteur' : 'eleve',
     },
   );
   const [nombre, setNombre] = useState(String(v.nombre));
+  const [paye, setPaye] = useState(v.paiement?.paye ?? false);
+  const [montant, setMontant] = useState(v.paiement?.montant !== undefined ? String(v.paiement.montant) : '');
+  const [moyen, setMoyen] = useState<MoyenPaiement | undefined>(v.paiement?.moyen);
   const { setErreur, affichage } = useErreur();
   const maj = (p: Partial<Vol>) => setV({ ...v, ...p });
+  /** Un élève ne modifie plus un vol dont le moniteur a noté le paiement. */
+  const verrouille = !estMoniteur && !!existant?.paiement;
 
   const valider = async () => {
     if (!dateValide(v.date)) return setErreur('Date au format AAAA-MM-JJ.');
     const n = parseInt(nombre, 10);
     if (!(n >= 1 && n <= 200)) return setErreur('Nombre de vols entre 1 et 200.');
-    await enregistrer('vol', { ...v, nombre: n });
+    let paiement = v.paiement;
+    if (estMoniteur) {
+      if (paye) {
+        const m = parseFloat(montant.replace(',', '.'));
+        if (!(m >= 0 && m <= 10000)) return setErreur('Montant payé en CHF (ex. 50 ou 42.50).');
+        if (!moyen) return setErreur('Choisissez le moyen de paiement.');
+        paiement = { paye: true, montant: m, moyen, moniteurId: session.id, date: v.paiement?.paye ? v.paiement.date : aujourdhui() };
+      } else {
+        paiement = undefined;
+      }
+    }
+    await enregistrer('vol', { ...v, nombre: n, paiement });
     nav.retour();
   };
 
+  if (verrouille && existant) {
+    return (
+      <Ecran titre="Vol">
+        <Carte>
+          <T gras>{formatDate(existant.date)} · {existant.nombre} × {existant.type === 'altitude' ? 'grand vol' : 'pente école'}</T>
+          <StatutPaiement vol={existant} />
+          <T doux>Ce vol a été enregistré par le moniteur ; il ne peut plus être modifié.</T>
+        </Carte>
+      </Ecran>
+    );
+  }
+
   return (
-    <Ecran titre={existant ? 'Modifier le vol' : 'Ajouter des vols'}>
+    <Ecran titre={existant ? 'Modifier le vol' : estMoniteur ? 'Ajouter des vols' : 'Noter mes vols'}>
       <Carte>
         <Ligne>
           {(['altitude', 'pente'] as TypeVol[]).map((t) => (
@@ -152,11 +210,49 @@ export function FormVol({ eleveId, id }: { eleveId: Id; id?: Id }) {
         </Ligne>
         <Champ label="Date (AAAA-MM-JJ)" value={v.date} onChangeText={(d) => maj({ date: d })} />
         <Champ label="Nombre de vols" value={nombre} onChangeText={setNombre} keyboardType="number-pad" />
-        <ChoixSite valeur={v.siteId} onChange={(s) => maj({ siteId: s })} />
-        <ChoixMoniteur valeur={v.moniteurId} onChange={(m) => maj({ moniteurId: m })} />
+        <ChoixTrajet decollageId={v.decollageId} atterrissageId={v.atterrissageId} onChange={maj} />
+        <ChoixMoniteur libelle="Moniteur du jour" valeur={v.moniteurId} onChange={(m) => maj({ moniteurId: m })} />
         <Champ label="Conditions (vent, thermique…)" value={v.conditions ?? ''} onChangeText={(t) => maj({ conditions: t || undefined })} />
         <Champ label="Remarques / exercices" value={v.remarques ?? ''} onChangeText={(t) => maj({ remarques: t || undefined })} multiline />
       </Carte>
+
+      <Titre>Paiement</Titre>
+      {estMoniteur ? (
+        <Carte>
+          <Ligne>
+            <Puce texte="À payer" actif={!paye} couleur={C.orange} onPress={() => setPaye(false)} />
+            <Puce
+              texte="Payé"
+              actif={paye}
+              couleur={C.vert}
+              onPress={() => {
+                setPaye(true);
+                if (!montant) {
+                  const m = montantPropose({ type: v.type, nombre: parseInt(nombre, 10) || 1 }, data.reglages.tarifs);
+                  if (m !== undefined) setMontant(String(m));
+                }
+              }}
+            />
+          </Ligne>
+          {paye && (
+            <>
+              <Champ label="Montant (CHF)" value={montant} onChangeText={setMontant} keyboardType="decimal-pad" />
+              <T doux taille={13}>Moyen de paiement</T>
+              <Ligne>
+                {MOYENS.map((m) => (
+                  <Puce key={m.id} texte={m.libelle} actif={moyen === m.id} onPress={() => setMoyen(m.id)} />
+                ))}
+              </Ligne>
+            </>
+          )}
+        </Carte>
+      ) : (
+        <Carte>
+          <StatutPaiement vol={v} />
+          <T doux taille={13}>Le moniteur du jour indique le paiement.</T>
+        </Carte>
+      )}
+
       {affichage}
       <Bouton titre="Enregistrer" onPress={valider} />
       {existant && (
@@ -171,6 +267,15 @@ export function FormVol({ eleveId, id }: { eleveId: Id; id?: Id }) {
         />
       )}
     </Ecran>
+  );
+}
+
+export function StatutPaiement({ vol }: { vol: Vol }) {
+  if (!vol.paiement?.paye) return <T gras couleur={C.orange}>À payer</T>;
+  return (
+    <T gras couleur={C.vert}>
+      Payé {vol.paiement.montant !== undefined ? formatCHF(vol.paiement.montant) : ''} · {libelleMoyen(vol.paiement.moyen)}
+    </T>
   );
 }
 
@@ -226,7 +331,7 @@ export function FormSeance({ id }: { id?: Id }) {
             <Champ label="Fin (HH:MM)" value={s.heureFin} onChangeText={(t) => maj({ heureFin: t })} />
           </Carte>
         </Ligne>
-        <ChoixSite valeur={s.siteId} onChange={(x) => maj({ siteId: x })} />
+        <ChoixTrajet decollageId={s.decollageId} atterrissageId={s.atterrissageId} onChange={maj} />
         <ChoixMoniteur valeur={s.moniteurId} onChange={(m) => maj({ moniteurId: m })} />
         <T doux taille={13}>Statut</T>
         <Ligne>
@@ -274,16 +379,20 @@ const LIBELLE_ORIENTATION: Record<Orientation, string> = {
   N: 'N', NE: 'NE', E: 'E', SE: 'SE', S: 'S', SW: 'SO', W: 'O', NW: 'NO',
 };
 
-export function FormSite({ id }: { id?: Id }) {
+export function FormSite({ type, id }: { type: TypeSite; id?: Id }) {
   const { data, enregistrer } = useApp();
   const nav = useNav();
   const existant = data.reglages.sites.find((s) => s.id === id);
+  const estDecollage = (existant?.type ?? type) === 'decollage';
   const [nom, setNom] = useState(existant?.nom ?? '');
   const [lat, setLat] = useState(existant ? String(existant.lat) : '');
   const [lon, setLon] = useState(existant ? String(existant.lon) : '');
   const [alt, setAlt] = useState(existant ? String(existant.altitude) : '');
   const [orient, setOrient] = useState<Orientation[]>(existant?.orientations ?? []);
+  const [atterrissages, setAtterrissages] = useState<Id[]>(existant?.atterrissageIds ?? []);
   const { setErreur, affichage } = useErreur();
+  const disponibles = data.reglages.sites.filter((s) => s.type === 'atterrissage');
+  const libelle = estDecollage ? 'décollage' : 'atterrissage';
 
   const ecrireSites = (sites: Site[]) => enregistrer('reglages', { ...data.reglages, sites });
 
@@ -294,35 +403,67 @@ export function FormSite({ id }: { id?: Id }) {
     if (!nom.trim()) return setErreur('Nom obligatoire.');
     if (!(la >= 45 && la <= 48.5 && lo >= 5 && lo <= 11)) return setErreur('Coordonnées hors de Suisse (latitude 45–48.5, longitude 5–11).');
     if (!(al >= 0 && al <= 4800)) return setErreur('Altitude en mètres (0–4800).');
-    const site: Site = { id: existant?.id ?? 'site-' + nouvelId(), nom: nom.trim(), lat: la, lon: lo, altitude: al, orientations: orient };
+    const site: Site = {
+      id: existant?.id ?? (estDecollage ? 'dec-' : 'att-') + nouvelId(),
+      type: estDecollage ? 'decollage' : 'atterrissage',
+      nom: nom.trim(),
+      lat: la,
+      lon: lo,
+      altitude: al,
+      orientations: estDecollage ? orient : [],
+      ...(estDecollage && { atterrissageIds: atterrissages }),
+    };
     await ecrireSites(existant ? data.reglages.sites.map((s) => (s.id === site.id ? site : s)) : [...data.reglages.sites, site]);
     nav.retour();
   };
 
   return (
-    <Ecran titre={existant ? 'Modifier le site' : 'Nouveau site'}>
+    <Ecran titre={existant ? `Modifier le ${libelle}` : `Nouveau ${libelle}`}>
       <Carte>
-        <Champ label="Nom (décollage)" value={nom} onChangeText={setNom} />
+        <Champ label={`Nom du ${libelle}`} value={nom} onChangeText={setNom} />
         <Champ label="Latitude (ex. 46.6978)" value={lat} onChangeText={setLat} keyboardType="decimal-pad" />
         <Champ label="Longitude (ex. 7.8008)" value={lon} onChangeText={setLon} keyboardType="decimal-pad" />
-        <Champ label="Altitude du décollage (m)" value={alt} onChangeText={setAlt} keyboardType="number-pad" />
-        <T doux taille={13}>Orientations du décollage (vent favorable)</T>
-        <Ligne>
-          {ORIENTATIONS.map((o) => (
-            <Puce key={o} texte={LIBELLE_ORIENTATION[o]} actif={orient.includes(o)} onPress={() => setOrient(orient.includes(o) ? orient.filter((x) => x !== o) : [...orient, o])} />
-          ))}
-        </Ligne>
-        <T doux taille={13}>Astuce : coordonnées visibles sur map.geo.admin.ch (clic droit sur le décollage).</T>
+        <Champ label="Altitude (m)" value={alt} onChangeText={setAlt} keyboardType="number-pad" />
+        {estDecollage && (
+          <>
+            <T doux taille={13}>Orientations du décollage (vent favorable)</T>
+            <Ligne>
+              {ORIENTATIONS.map((o) => (
+                <Puce key={o} texte={LIBELLE_ORIENTATION[o]} actif={orient.includes(o)} onPress={() => setOrient(orient.includes(o) ? orient.filter((x) => x !== o) : [...orient, o])} />
+              ))}
+            </Ligne>
+            <T doux taille={13}>Atterrissages habituels</T>
+            {disponibles.length === 0 ? (
+              <T doux>Ajoutez d’abord des atterrissages dans Réglages.</T>
+            ) : (
+              <Ligne>
+                {disponibles.map((a) => (
+                  <Puce
+                    key={a.id}
+                    texte={a.nom}
+                    actif={atterrissages.includes(a.id)}
+                    onPress={() => setAtterrissages(atterrissages.includes(a.id) ? atterrissages.filter((x) => x !== a.id) : [...atterrissages, a.id])}
+                  />
+                ))}
+              </Ligne>
+            )}
+          </>
+        )}
+        <T doux taille={13}>Astuce : coordonnées visibles sur map.geo.admin.ch (clic droit sur le lieu).</T>
       </Carte>
       {affichage}
       <Bouton titre="Enregistrer" onPress={valider} />
       {existant && (
         <Bouton
           variante="danger"
-          titre="Supprimer le site"
+          titre={`Supprimer ce ${libelle}`}
           onPress={async () => {
-            if (!(await confirmer(`Supprimer le site ${existant.nom} ?`))) return;
-            await ecrireSites(data.reglages.sites.filter((s) => s.id !== existant.id));
+            if (!(await confirmer(`Supprimer ${existant.nom} ?`))) return;
+            await ecrireSites(
+              data.reglages.sites
+                .filter((s) => s.id !== existant.id)
+                .map((s) => (s.atterrissageIds?.includes(existant.id) ? { ...s, atterrissageIds: s.atterrissageIds.filter((x) => x !== existant.id) } : s)),
+            );
             nav.retour();
           }}
         />

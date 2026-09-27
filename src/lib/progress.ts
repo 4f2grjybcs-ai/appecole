@@ -1,5 +1,5 @@
-import { BRANCHES_THEORIE, TOUTES_COMPETENCES } from './fsvl';
-import type { Eleve, Exigences, Id, ValidationCompetence, Vol } from './types';
+import { toutesCompetences } from './fsvl';
+import type { Eleve, Etape, Exigences, Id, ValidationCompetence, Vol } from './types';
 
 export interface Critere {
   libelle: string;
@@ -30,17 +30,17 @@ export function calculerProgression(
   vols: Vol[],
   validations: ValidationCompetence[],
   exigences: Exigences,
+  etapes: Etape[],
 ): Progression {
   const siens = vols.filter((v) => v.eleveId === eleve.id);
   const altitude = siens.filter((v) => v.type === 'altitude');
   const grandsVols = altitude.reduce((s, v) => s + v.nombre, 0);
   const volsPente = siens.filter((v) => v.type === 'pente').reduce((s, v) => s + v.nombre, 0);
-  const sites = new Set(altitude.map((v) => v.siteId).filter(Boolean)).size;
-  const jours = new Set(altitude.map((v) => v.date)).size;
-  const acquises = TOUTES_COMPETENCES.filter(
+  const decollages = new Set(altitude.map((v) => v.decollageId).filter(Boolean)).size;
+  const competences = toutesCompetences(etapes);
+  const acquises = competences.filter(
     (c) => niveauCompetence(validations, eleve.id, c.id) === 'acquis',
   ).length;
-  const branches = BRANCHES_THEORIE.filter((b) => eleve.examenTheorique.branches[b.id]).length;
 
   const critere = (libelle: string, actuel: number, requis: number): Critere => ({
     libelle,
@@ -50,11 +50,10 @@ export function calculerProgression(
   });
 
   const criteres = [
+    critere('Pente école', volsPente, exigences.volsPenteMin),
     critere('Grands vols', grandsVols, exigences.grandsVolsMin),
-    critere('Sites différents (grands vols)', sites, exigences.sitesDifferentsMin),
-    critere('Jours de grands vols', jours, exigences.joursDeVolMin),
-    critere('Compétences acquises', acquises, TOUTES_COMPETENCES.length),
-    critere('Branches théoriques réussies', branches, BRANCHES_THEORIE.length),
+    critere('Sites différents', decollages, exigences.sitesDifferentsMin),
+    critere('Compétences acquises', acquises, competences.length),
   ];
 
   const pourcentage =

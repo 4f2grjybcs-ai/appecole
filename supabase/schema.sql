@@ -102,6 +102,39 @@ create policy records_eleves on public.records for select
     )
   );
 
+-- Un élève note ses propres vols. Il ne peut ni indiquer de paiement, ni modifier
+-- ou supprimer un vol dont le moniteur a déjà noté le paiement.
+drop policy if exists vols_eleves_ajout on public.records;
+create policy vols_eleves_ajout on public.records for insert
+  with check (
+    ecole_id = public.mon_ecole() and public.mon_role() = 'eleve'
+    and kind = 'vol' and eleve_id = public.ma_personne()
+    and data ->> 'eleveId' = public.ma_personne()
+    and not (data ? 'paiement')
+  );
+
+drop policy if exists vols_eleves_modif on public.records;
+create policy vols_eleves_modif on public.records for update
+  using (
+    ecole_id = public.mon_ecole() and public.mon_role() = 'eleve'
+    and kind = 'vol' and eleve_id = public.ma_personne()
+    and not (data ? 'paiement')
+  )
+  with check (
+    ecole_id = public.mon_ecole() and public.mon_role() = 'eleve'
+    and kind = 'vol' and eleve_id = public.ma_personne()
+    and data ->> 'eleveId' = public.ma_personne()
+    and not (data ? 'paiement')
+  );
+
+drop policy if exists vols_eleves_suppression on public.records;
+create policy vols_eleves_suppression on public.records for delete
+  using (
+    ecole_id = public.mon_ecole() and public.mon_role() = 'eleve'
+    and kind = 'vol' and eleve_id = public.ma_personne()
+    and not (data ? 'paiement')
+  );
+
 -- Création d'une école par son premier moniteur.
 create or replace function public.creer_ecole(p_nom text, p_personne_id text) returns uuid
 language plpgsql security definer set search_path = public as $$
