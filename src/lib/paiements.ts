@@ -71,3 +71,9 @@ export function encaisser(
 ): Vol[] {
   return vols.map((v) => ({ ...v, paiement: { paye: true, montant: prixVol(v, t), moyen, moniteurId, date } }));
 }
+
+/** « Grand vol » ou « Pente école · 12 vols » (anciennes entrées groupées : « 3 × grand vol »). */
+export function libelleVol(v: Pick<Vol, 'type' | 'nombre'>): string {
+  if (v.type === 'altitude') return v.nombre > 1 ? `${v.nombre} × grand vol` : 'Grand vol';
+  return `Pente école · ${v.nombre} vol${v.nombre > 1 ? 's' : ''}`;
+}

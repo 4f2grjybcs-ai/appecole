@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 import { aujourdhui, dateValide, formatDate, nouvelId } from '../lib/defaults';
+import { libellesExercices } from '../lib/fsvl';
 import { formatCHF, libelleMoyen, MOYENS, prixVol } from '../lib/paiements';
 import type { Eleve, Id, Moniteur, MoyenPaiement, Orientation, Seance, Site, StatutSeance, TypeSite, TypeVol, Vol } from '../lib/types';
 import { useApp } from '../state/AppContext';
@@ -145,15 +146,53 @@ export function FormEleve({ id }: { id?: Id }) {
   );
 }
 
-interface Trajet {
+/** Un vol tel qu'il est saisi dans le formulaire (chaque vol est noté séparément). */
+interface VolSaisi {
   cle: string;
   decollageId?: Id;
   atterrissageId?: Id;
+  /** Pente école : nombre de vols de la séance */
   nombre: string;
   navettes: string;
+  remarques: string;
+  exercices: string[];
 }
 
 const entier = (t: string) => (t.trim() === '' ? 0 : parseInt(t, 10));
+
+function ChoixExercices({ valeur, onChange }: { valeur: string[]; onChange: (ids: string[]) => void }) {
+  const { data } = useApp();
+  const [ouvert, setOuvert] = useState(false);
+  const choisis = libellesExercices(valeur, data.reglages.etapes);
+  return (
+    <View style={{ gap: 6 }}>
+      <Ligne style={{ justifyContent: 'space-between' }}>
+        <T doux taille={13}>Exercices {choisis.length ? `(${choisis.length})` : ''}</T>
+        <Bouton petit variante="contour" titre={ouvert ? 'Fermer' : 'Choisir'} onPress={() => setOuvert(!ouvert)} />
+      </Ligne>
+      {!ouvert && choisis.length > 0 && <T>{choisis.join(' · ')}</T>}
+      {ouvert &&
+        data.reglages.etapes.map((e) => (
+          <View key={e.id} style={{ gap: 4 }}>
+            <T doux taille={12}>{e.titre}</T>
+            <Ligne>
+              {e.competences.map((c) => {
+                const actif = valeur.includes(c.id);
+                return (
+                  <Puce
+                    key={c.id}
+                    texte={c.libelle}
+                    actif={actif}
+                    onPress={() => onChange(actif ? valeur.filter((x) => x !== c.id) : [...valeur, c.id])}
+                  />
+                );
+              })}
+            </Ligne>
+          </View>
+        ))}
+    </View>
+  );
+}
 
 export function FormVol({ eleveId, id }: { eleveId: Id; id?: Id }) {
   const { data, enregistrer, supprimer, session } = useApp();
@@ -171,13 +210,15 @@ export function FormVol({ eleveId, id }: { eleveId: Id; id?: Id }) {
       saisiPar: estMoniteur ? 'moniteur' : 'eleve',
     },
   );
-  const [trajets, setTrajets] = useState<Trajet[]>([
+  const [vols, setVols] = useState<VolSaisi[]>([
     {
       cle: v.id,
       decollageId: v.decollageId,
       atterrissageId: v.atterrissageId,
       nombre: String(v.nombre),
       navettes: v.navettes ? String(v.navettes) : '',
+      remarques: v.remarques ?? '',
+      exercices: v.exercices ?? [],
     },
   ]);
   const [paye, setPaye] = useState(v.paiement?.paye ?? false);
@@ -185,17 +226,20 @@ export function FormVol({ eleveId, id }: { eleveId: Id; id?: Id }) {
   const [moyen, setMoyen] = useState<MoyenPaiement | undefined>(v.paiement?.moyen);
   const { setErreur, affichage } = useErreur();
   const maj = (p: Partial<Vol>) => setV({ ...v, ...p });
-  const majTrajet = (i: number, p: Partial<Trajet>) => setTrajets(trajets.map((t, j) => (j === i ? { ...t, ...p } : t)));
+  const majVol = (i: number, p: Partial<VolSaisi>) => setVols(vols.map((t, j) => (j === i ? { ...t, ...p } : t)));
   /** Un élève ne modifie plus un vol validé (encaissé) par le moniteur. */
   const verrouille = !estMoniteur && !!existant?.paiement;
-  const plusieurs = trajets.length > 1;
+  const plusieurs = vols.length > 1;
+  const pente = v.type === 'pente';
+  const libelleVol = pente ? 'Séance' : 'Vol';
 
-  const volsSaisis = (): Vol[] | string => {
+  const volsAEnregistrer = (): Vol[] | string => {
     const r: Vol[] = [];
-    for (const [i, t] of trajets.entries()) {
-      const n = entier(t.nombre);
+    for (const [i, t] of vols.entries()) {
+      // Un grand vol est toujours noté seul ; en pente école, une séance peut compter plusieurs vols.
+      const n = pente ? entier(t.nombre) : existant?.type === 'altitude' ? existant.nombre : 1;
       const nb = entier(t.navettes);
-      const quel = plusieurs ? ` (décollage ${i + 1})` : '';
+      const quel = plusieurs ? ` (${libelleVol.toLowerCase()} ${i + 1})` : '';
       if (!(n >= 1 && n <= 200)) return `Nombre de vols entre 1 et 200${quel}.`;
       if (!(nb >= 0 && nb <= 50)) return `Nombre de navettes entre 0 et 50${quel}.`;
       r.push({
@@ -205,17 +249,20 @@ export function FormVol({ eleveId, id }: { eleveId: Id; id?: Id }) {
         atterrissageId: t.atterrissageId,
         nombre: n,
         navettes: nb || undefined,
+        remarques: t.remarques.trim() || undefined,
+        exercices: t.exercices.length ? t.exercices : undefined,
       });
     }
     return r;
   };
 
-  const saisis = volsSaisis();
-  const estimation = typeof saisis === 'string' ? undefined : saisis.reduce((s, x) => s + prixVol(x, data.reglages.tarifs), 0);
+  const aEnregistrer = volsAEnregistrer();
+  const estimation =
+    typeof aEnregistrer === 'string' ? undefined : aEnregistrer.reduce((s, x) => s + prixVol(x, data.reglages.tarifs), 0);
 
   const valider = async () => {
     if (!dateValide(v.date)) return setErreur('Date au format AAAA-MM-JJ.');
-    if (typeof saisis === 'string') return setErreur(saisis);
+    if (typeof aEnregistrer === 'string') return setErreur(aEnregistrer);
     let paiement = v.paiement;
     if (estMoniteur) {
       if (paye) {
@@ -227,16 +274,19 @@ export function FormVol({ eleveId, id }: { eleveId: Id; id?: Id }) {
         paiement = undefined;
       }
     }
-    for (const x of saisis) await enregistrer('vol', { ...x, paiement: plusieurs ? undefined : paiement });
+    for (const x of aEnregistrer) await enregistrer('vol', { ...x, paiement: plusieurs ? undefined : paiement });
     nav.retour();
   };
 
   if (verrouille && existant) {
+    const exercices = libellesExercices(existant.exercices, data.reglages.etapes);
     return (
       <Ecran titre="Vol">
         <Carte>
-          <T gras>{formatDate(existant.date)} · {existant.nombre} × {existant.type === 'altitude' ? 'grand vol' : 'pente école'}</T>
+          <T gras>{formatDate(existant.date)} · {existant.type === 'altitude' ? 'Grand vol' : `Pente école · ${existant.nombre} vols`}</T>
           {!!existant.navettes && <T doux>🚐 {existant.navettes} navette{existant.navettes > 1 ? 's' : ''}</T>}
+          {exercices.length > 0 && <T>Exercices : {exercices.join(' · ')}</T>}
+          {!!existant.remarques && <T>{existant.remarques}</T>}
           <StatutPaiement vol={existant} />
           <T doux>Ce vol a été validé par le moniteur et figure dans votre carnet ; il ne peut plus être modifié.</T>
         </Carte>
@@ -249,48 +299,54 @@ export function FormVol({ eleveId, id }: { eleveId: Id; id?: Id }) {
       <Carte>
         <Ligne>
           {(['altitude', 'pente'] as TypeVol[]).map((t) => (
-            <Puce key={t} texte={t === 'altitude' ? 'Grand vol' : 'Pente école'} actif={v.type === t} onPress={() => maj({ type: t })} />
+            <Puce key={t} texte={t === 'altitude' ? 'Grands vols' : 'Pente école'} actif={v.type === t} onPress={() => maj({ type: t })} />
           ))}
         </Ligne>
         <Champ label="Date (AAAA-MM-JJ)" value={v.date} onChangeText={(d) => maj({ date: d })} />
         <ChoixMoniteur libelle="Moniteur du jour" valeur={v.moniteurId} onChange={(m) => maj({ moniteurId: m })} />
+        <Champ label="Conditions du jour (vent, thermique…)" value={v.conditions ?? ''} onChangeText={(x) => maj({ conditions: x || undefined })} />
       </Carte>
 
-      {trajets.map((t, i) => (
+      {vols.map((t, i) => (
         <Carte key={t.cle}>
-          {plusieurs && (
-            <Ligne style={{ justifyContent: 'space-between' }}>
-              <T gras>Décollage {i + 1}</T>
-              <Bouton petit variante="danger" titre="Retirer" onPress={() => setTrajets(trajets.filter((_, j) => j !== i))} />
-            </Ligne>
-          )}
-          <ChoixTrajet
-            decollageId={t.decollageId}
-            atterrissageId={t.atterrissageId}
-            onChange={(p) => majTrajet(i, p)}
-          />
+          <Ligne style={{ justifyContent: 'space-between' }}>
+            <T gras taille={17}>{existant ? libelleVol : `${libelleVol} ${i + 1}`}</T>
+            {plusieurs && <Bouton petit variante="danger" titre="Retirer" onPress={() => setVols(vols.filter((_, j) => j !== i))} />}
+          </Ligne>
+          <ChoixTrajet decollageId={t.decollageId} atterrissageId={t.atterrissageId} onChange={(p) => majVol(i, p)} />
           <Ligne style={{ flexWrap: 'nowrap' }}>
+            {pente && (
+              <View style={{ flex: 1 }}>
+                <Champ label="Nombre de vols" value={t.nombre} onChangeText={(x) => majVol(i, { nombre: x })} keyboardType="number-pad" />
+              </View>
+            )}
             <View style={{ flex: 1 }}>
-              <Champ label="Nombre de vols" value={t.nombre} onChangeText={(x) => majTrajet(i, { nombre: x })} keyboardType="number-pad" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Champ label="🚐 Navettes" value={t.navettes} onChangeText={(x) => majTrajet(i, { navettes: x })} keyboardType="number-pad" placeholder="0" />
+              <Champ label="🚐 Navettes" value={t.navettes} onChangeText={(x) => majVol(i, { navettes: x })} keyboardType="number-pad" placeholder="0" />
             </View>
           </Ligne>
+          <ChoixExercices valeur={t.exercices} onChange={(ids) => majVol(i, { exercices: ids })} />
+          <Champ
+            label="Commentaire"
+            value={t.remarques}
+            onChangeText={(x) => majVol(i, { remarques: x })}
+            placeholder="Déroulement du vol, points à travailler…"
+            multiline
+          />
         </Carte>
       ))}
       {!existant && (
         <Bouton
           variante="contour"
-          titre="+ Autre décollage ce jour-là"
-          onPress={() => setTrajets([...trajets, { cle: nouvelId(), nombre: '1', navettes: '' }])}
+          titre={pente ? '+ Autre séance ce jour-là' : '+ Ajouter un vol'}
+          onPress={() => {
+            const dernier = vols[vols.length - 1];
+            setVols([
+              ...vols,
+              { cle: nouvelId(), decollageId: dernier?.decollageId, atterrissageId: dernier?.atterrissageId, nombre: '1', navettes: '', remarques: '', exercices: [] },
+            ]);
+          }}
         />
       )}
-
-      <Carte>
-        <Champ label="Conditions (vent, thermique…)" value={v.conditions ?? ''} onChangeText={(x) => maj({ conditions: x || undefined })} />
-        <Champ label="Remarques / exercices" value={v.remarques ?? ''} onChangeText={(x) => maj({ remarques: x || undefined })} multiline />
-      </Carte>
 
       <Titre>Paiement</Titre>
       {estMoniteur && !plusieurs ? (
@@ -323,20 +379,20 @@ export function FormVol({ eleveId, id }: { eleveId: Id; id?: Id }) {
         <Carte>
           {estimation !== undefined && (
             <Ligne style={{ justifyContent: 'space-between' }}>
-              <T>Total estimé</T>
+              <T>Total estimé ({vols.length} {pente ? 'séance' : 'vol'}{plusieurs ? 's' : ''})</T>
               <T gras couleur={C.orange}>{formatCHF(estimation)}</T>
             </Ligne>
           )}
           <T doux taille={13}>
             {estMoniteur
-              ? 'Plusieurs décollages : encaissez ensuite depuis « Encaisser et valider ».'
+              ? 'Plusieurs vols : encaissez ensuite depuis « Encaisser et valider ».'
               : 'Le moniteur du jour encaisse puis valide : les vols entrent alors dans votre carnet.'}
           </T>
         </Carte>
       )}
 
       {affichage}
-      <Bouton titre="Enregistrer" onPress={valider} />
+      <Bouton titre={plusieurs ? `Enregistrer les ${vols.length} ${pente ? 'séances' : 'vols'}` : 'Enregistrer'} onPress={valider} />
       {existant && (
         <Bouton
           variante="danger"

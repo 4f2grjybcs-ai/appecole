@@ -3,8 +3,9 @@
 Application mobile (iPhone et Android) pour gérer une école de parapente en Suisse,
 selon les directives de formation FSVL.
 
-- **Carnet de vol virtuel** : l'élève note ses vols (pente école ou grand vol, décollage → atterrissage,
-  navettes), y compris plusieurs décollages différents le même jour.
+- **Carnet de vol virtuel** : l'élève note chaque vol séparément (décollage → atterrissage, navettes,
+  exercices travaillés et commentaire), y compris plusieurs décollages différents le même jour.
+  En pente école, une séance peut regrouper plusieurs vols.
   Le total à payer (vols + navettes) se calcule automatiquement selon les tarifs de l'école.
 - **Encaissement et validation** : le moniteur du jour encaisse (montant, moyen de paiement) et valide
   les vols en une fois ; seuls les vols validés entrent dans le carnet et comptent dans la progression.

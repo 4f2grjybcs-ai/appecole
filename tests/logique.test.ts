@@ -3,7 +3,7 @@ import { alertesEleve } from '../src/lib/alertes';
 import { carnetHtml, volsDuCarnet } from '../src/lib/carnet';
 import { dateValide, donneesVides, normaliser } from '../src/lib/defaults';
 import { donneesDemo } from '../src/lib/demo';
-import { ETAPES, TOUTES_COMPETENCES } from '../src/lib/fsvl';
+import { ETAPES, libellesExercices, TOUTES_COMPETENCES } from '../src/lib/fsvl';
 import { calculerProgression, joursAvant } from '../src/lib/progress';
 import type { Eleve, Site } from '../src/lib/types';
 import { ecartAngulaire, evaluer, parserPrevision, pointCardinal, urlPrevision, type HeureMeteo } from '../src/lib/weather';
@@ -218,5 +218,13 @@ describe('carnet PDF', () => {
     expect(html).not.toContain('<script>alert');
     expect(html).toContain('Signature du moniteur');
     expect((html.match(/<tr>\s*<td class="num">/g) ?? []).length).toBe(carnet.length);
+  });
+
+  it('affiche les exercices et le commentaire de chaque vol', () => {
+    const d = donneesDemo();
+    for (const v of d.vols) v.paiement ??= { paye: true, montant: 0, moyen: 'twint' };
+    const html = carnetHtml(d.eleves[0], d, '2026-09-27');
+    expect(html).toContain('Grandes oreilles, Approche en U / en 8<br>Oreilles tenues 30 s');
+    expect(libellesExercices(['oreilles', 'inconnue'], ETAPES)).toEqual(['Grandes oreilles']);
   });
 });

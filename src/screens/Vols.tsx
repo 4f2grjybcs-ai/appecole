@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { aujourdhui, formatDate } from '../lib/defaults';
-import { estPaye, formatCHF, libelleMoyen, totalAPayer, totaux } from '../lib/paiements';
+import { estPaye, formatCHF, libelleMoyen, libelleVol, totalAPayer, totaux } from '../lib/paiements';
 import { useApp } from '../state/AppContext';
 import { C, Carte, Ecran, Ligne, Puce, T, Titre } from '../ui/kit';
 import { useNav } from '../ui/nav';
@@ -79,7 +79,7 @@ export function Vols() {
           <Ligne style={{ justifyContent: 'space-between' }}>
             <T gras>{nomEleve(v.eleveId)}</T>
             <T couleur={v.type === 'altitude' ? C.primaire : C.doux}>
-              {v.nombre} × {v.type === 'altitude' ? 'grand vol' : 'pente école'}
+              {libelleVol(v)}
             </T>
           </Ligne>
           <T doux>{nomSite(v.decollageId)} → {nomSite(v.atterrissageId)}</T>

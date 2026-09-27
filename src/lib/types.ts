@@ -59,7 +59,10 @@ export interface Vol {
   navettes?: number;
   moniteurId?: Id;
   conditions?: string;
+  /** Commentaire libre du vol */
   remarques?: string;
+  /** Exercices travaillés pendant ce vol (identifiants de compétences) */
+  exercices?: string[];
   /** Qui a noté le vol */
   saisiPar?: 'eleve' | 'moniteur';
   paiement?: Paiement;

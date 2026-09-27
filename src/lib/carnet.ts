@@ -1,5 +1,5 @@
 import { formatDate } from './defaults';
-import { BRANCHES_THEORIE } from './fsvl';
+import { BRANCHES_THEORIE, libellesExercices } from './fsvl';
 import { estPaye } from './paiements';
 import { calculerProgression } from './progress';
 import type { AppData, Eleve, Vol } from './types';
@@ -42,14 +42,13 @@ export function carnetHtml(eleve: Eleve, data: AppData, dateExport: string): str
       return `<tr>
         <td class="num">${i + 1}</td>
         <td>${formatDate(v.date)}</td>
-        <td>${v.type === 'altitude' ? 'Grand vol' : 'Pente école'}</td>
-        <td class="num">${v.nombre}</td>
+        <td>${v.type === 'altitude' ? 'Grand vol' : 'Pente école'}${v.nombre > 1 ? ` <span class="alt">× ${v.nombre}</span>` : ''}</td>
         <td class="num">${v.type === 'altitude' ? cumulGrands : cumulPente}</td>
         <td class="num">${v.navettes ?? ''}</td>
         <td>${nomSite(v.decollageId)}</td>
         <td>${nomSite(v.atterrissageId)}</td>
         <td>${esc(moniteur(v.paiement?.moniteurId ?? v.moniteurId))}</td>
-        <td class="rem">${esc(v.remarques)}</td>
+        <td class="rem">${[libellesExercices(v.exercices, reglages.etapes).map(esc).join(', '), esc(v.remarques)].filter(Boolean).join('<br>')}</td>
       </tr>`;
     })
     .join('');
@@ -147,11 +146,11 @@ export function carnetHtml(eleve: Eleve, data: AppData, dateExport: string): str
   <h2>Résumé de la formation</h2>
   <div class="resume">${resume}</div>
 
-  <h2>Vols validés (${vols.length} entrées · ${p.volsPente} en pente école · ${p.grandsVols} grands vols)</h2>
+  <h2>Vols validés (${p.grandsVols} grands vols · ${p.volsPente} vols en pente école)</h2>
   ${
     vols.length
       ? `<table>
-    <thead><tr><th>N°</th><th>Date</th><th>Type</th><th>Vols</th><th>Cumul</th><th>Navettes</th><th>Décollage</th><th>Atterrissage</th><th>Moniteur</th><th>Remarques</th></tr></thead>
+    <thead><tr><th>N°</th><th>Date</th><th>Type</th><th>Cumul</th><th>Navettes</th><th>Décollage</th><th>Atterrissage</th><th>Moniteur</th><th>Exercices / commentaire</th></tr></thead>
     <tbody>${lignesVols}</tbody>
   </table>`
       : '<p class="vide">Aucun vol validé.</p>'

@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import * as sb from '../data/supabaseStore';
 import { aujourdhui, formatDate } from '../lib/defaults';
-import { BRANCHES_THEORIE } from '../lib/fsvl';
+import { BRANCHES_THEORIE, libellesExercices } from '../lib/fsvl';
 import { alertesEleve } from '../lib/alertes';
 import { calculerProgression, niveauCompetence } from '../lib/progress';
 import type { Id, NiveauCompetence, Vol } from '../lib/types';
 import { volsDuCarnet } from '../lib/carnet';
-import { enAttente, estPaye, formatCHF, prixVol, totalAPayer } from '../lib/paiements';
+import { enAttente, estPaye, formatCHF, libelleVol, prixVol, totalAPayer } from '../lib/paiements';
 import { exporterCarnet } from '../ui/exportPdf';
 import { useApp } from '../state/AppContext';
 import { Alerte, Barre, Bouton, C, Carte, Champ, Ecran, informer, Ligne, Puce, T, Titre } from '../ui/kit';
@@ -53,14 +53,17 @@ export function FicheEleve({ id, lectureSeule }: { id: Id; lectureSeule?: boolea
       <Ligne style={{ justifyContent: 'space-between' }}>
         <T gras>{formatDate(v.date)}</T>
         <T couleur={v.type === 'altitude' ? C.primaire : C.doux}>
-          {v.nombre} × {v.type === 'altitude' ? 'grand vol' : 'pente école'}
+          {libelleVol(v)}
         </T>
       </Ligne>
       <T doux>{nomSite(v.decollageId)} → {nomSite(v.atterrissageId)}</T>
       <T doux>Moniteur : {nomMoniteur(v.moniteurId)}</T>
       {!!v.navettes && <T doux>🚐 {v.navettes} navette{v.navettes > 1 ? 's' : ''}</T>}
       {!!v.conditions && <T doux>Conditions : {v.conditions}</T>}
-      {!!v.remarques && <T>{v.remarques}</T>}
+      {libellesExercices(v.exercices, data.reglages.etapes).length > 0 && (
+        <T>🎯 {libellesExercices(v.exercices, data.reglages.etapes).join(' · ')}</T>
+      )}
+      {!!v.remarques && <T>💬 {v.remarques}</T>}
       <Ligne style={{ justifyContent: 'space-between' }}>
         {estPaye(v) ? <StatutPaiement vol={v} /> : <T gras couleur={C.orange}>{formatCHF(prixVol(v, data.reglages.tarifs))} à payer</T>}
         {v.saisiPar === 'eleve' && <T doux taille={12}>noté par l’élève</T>}

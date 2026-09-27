@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { aujourdhui, formatDate } from '../lib/defaults';
-import { encaisser, enAttente, formatCHF, MOYENS, prixVol } from '../lib/paiements';
+import { enAttente, encaisser, formatCHF, libelleVol, MOYENS, prixVol } from '../lib/paiements';
 import type { Id, MoyenPaiement } from '../lib/types';
 import { useApp } from '../state/AppContext';
 import { Alerte, Bouton, C, Carte, Ecran, Ligne, Puce, T, Titre } from '../ui/kit';
@@ -51,7 +51,7 @@ export function Encaisser({ eleveId }: { eleveId: Id }) {
                   <T gras>{formatCHF(prixVol(v, data.reglages.tarifs))}</T>
                 </Ligne>
                 <T>
-                  {v.nombre} × {v.type === 'altitude' ? 'grand vol' : 'pente école'}
+                  {libelleVol(v)}
                   {v.navettes ? ` · 🚐 ${v.navettes} navette${v.navettes > 1 ? 's' : ''}` : ''}
                 </T>
                 <T doux>{nomSite(v.decollageId)} → {nomSite(v.atterrissageId)}</T>

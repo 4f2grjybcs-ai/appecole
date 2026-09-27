@@ -78,3 +78,9 @@ export const EXIGENCES_DEFAUT: Exigences = {
   grandsVolsMin: 40,
   sitesDifferentsMin: 5,
 };
+
+/** Libellés des exercices d'un vol (les compétences supprimées depuis sont ignorées). */
+export function libellesExercices(ids: string[] | undefined, etapes: Etape[]): string[] {
+  const toutes = toutesCompetences(etapes);
+  return (ids ?? []).map((id) => toutes.find((c) => c.id === id)?.libelle).filter((x): x is string => !!x);
+}
