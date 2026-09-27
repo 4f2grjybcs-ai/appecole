@@ -4,6 +4,7 @@ import { ActivityIndicator, BackHandler, Pressable, Text, View } from 'react-nat
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Connexion } from './src/screens/Connexion';
 import { Eleves } from './src/screens/Eleves';
+import { Encaisser } from './src/screens/Encaisser';
 import { FormCompetences } from './src/screens/FormCompetences';
 import { FicheEleve } from './src/screens/FicheEleve';
 import { FormEleve, FormMoniteur, FormSeance, FormSite, FormVol } from './src/screens/Formulaires';
@@ -139,6 +140,7 @@ function EcranPile({ route }: { route: Route }) {
     case 'formSite': return <FormSite type={route.type} id={route.id} />;
     case 'formMoniteur': return <FormMoniteur id={route.id} />;
     case 'formCompetences': return <FormCompetences />;
+    case 'encaisser': return <Encaisser eleveId={route.eleveId} />;
   }
 }
 

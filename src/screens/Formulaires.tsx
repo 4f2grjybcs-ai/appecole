@@ -194,7 +194,7 @@ export function FormVol({ eleveId, id }: { eleveId: Id; id?: Id }) {
         <Carte>
           <T gras>{formatDate(existant.date)} · {existant.nombre} × {existant.type === 'altitude' ? 'grand vol' : 'pente école'}</T>
           <StatutPaiement vol={existant} />
-          <T doux>Ce vol a été enregistré par le moniteur ; il ne peut plus être modifié.</T>
+          <T doux>Ce vol a été validé par le moniteur et figure dans votre carnet ; il ne peut plus être modifié.</T>
         </Carte>
       </Ecran>
     );
@@ -220,9 +220,9 @@ export function FormVol({ eleveId, id }: { eleveId: Id; id?: Id }) {
       {estMoniteur ? (
         <Carte>
           <Ligne>
-            <Puce texte="À payer" actif={!paye} couleur={C.orange} onPress={() => setPaye(false)} />
+            <Puce texte="À valider" actif={!paye} couleur={C.orange} onPress={() => setPaye(false)} />
             <Puce
-              texte="Payé"
+              texte="Payé et validé"
               actif={paye}
               couleur={C.vert}
               onPress={() => {
@@ -249,7 +249,7 @@ export function FormVol({ eleveId, id }: { eleveId: Id; id?: Id }) {
       ) : (
         <Carte>
           <StatutPaiement vol={v} />
-          <T doux taille={13}>Le moniteur du jour indique le paiement.</T>
+          <T doux taille={13}>Le moniteur du jour encaisse puis valide le vol : il entre alors dans votre carnet.</T>
         </Carte>
       )}
 
@@ -271,10 +271,10 @@ export function FormVol({ eleveId, id }: { eleveId: Id; id?: Id }) {
 }
 
 export function StatutPaiement({ vol }: { vol: Vol }) {
-  if (!vol.paiement?.paye) return <T gras couleur={C.orange}>À payer</T>;
+  if (!vol.paiement?.paye) return <T gras couleur={C.orange}>À valider · à payer</T>;
   return (
     <T gras couleur={C.vert}>
-      Payé {vol.paiement.montant !== undefined ? formatCHF(vol.paiement.montant) : ''} · {libelleMoyen(vol.paiement.moyen)}
+      ✔ Validé · payé {vol.paiement.montant !== undefined ? formatCHF(vol.paiement.montant) : ''} · {libelleMoyen(vol.paiement.moyen)}
     </T>
   );
 }

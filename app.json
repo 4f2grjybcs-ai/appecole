@@ -28,6 +28,9 @@
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#0B6FB8"
-    }
+    },
+    "plugins": [
+      "expo-sharing"
+    ]
   }
 }

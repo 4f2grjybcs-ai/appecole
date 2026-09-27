@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { aujourdhui, formatDate } from '../lib/defaults';
-import { estPaye, formatCHF, libelleMoyen, totaux } from '../lib/paiements';
+import { estPaye, formatCHF, libelleMoyen, totalAPayer, totaux } from '../lib/paiements';
 import { useApp } from '../state/AppContext';
 import { C, Carte, Ecran, Ligne, Puce, T, Titre } from '../ui/kit';
 import { useNav } from '../ui/nav';
@@ -25,6 +25,11 @@ export function Vols() {
         .slice(0, 200),
     [data.vols, filtre, miens, ajd, session],
   );
+
+  const parEleve = [...new Set(vols.map((v) => v.eleveId))].map((eleveId) => {
+    const liste = vols.filter((v) => v.eleveId === eleveId);
+    return { eleveId, liste, total: totalAPayer(liste, data.reglages.tarifs) };
+  });
 
   const duJour = totaux(data.vols.filter((v) => v.date === ajd && (!miens || v.moniteurId === session?.id)));
   const nomEleve = (id: string) => {
@@ -54,8 +59,21 @@ export function Vols() {
         <Puce texte="Mes vols uniquement" actif={miens} couleur={C.doux} onPress={() => setMiens(!miens)} />
       </Ligne>
 
-      {vols.length === 0 && <T doux>Aucun vol.</T>}
-      {vols.map((v, i) => (
+      {vols.length === 0 && <T doux>{filtre === 'aEncaisser' ? 'Rien à encaisser.' : 'Aucun vol.'}</T>}
+      {filtre === 'aEncaisser' &&
+        parEleve.map(({ eleveId, liste, total }) => (
+          <Carte key={eleveId} onPress={() => nav.ouvrir({ ecran: 'encaisser', eleveId })}>
+            <Ligne style={{ justifyContent: 'space-between' }}>
+              <T gras taille={17}>{nomEleve(eleveId)}</T>
+              <T gras taille={17} couleur={C.orange}>{formatCHF(total)}</T>
+            </Ligne>
+            <T doux>
+              {liste.length} entrée{liste.length > 1 ? 's' : ''} à valider · depuis le {formatDate(liste[liste.length - 1].date)}
+            </T>
+            <T gras couleur={C.primaire}>Encaisser et valider ›</T>
+          </Carte>
+        ))}
+      {filtre !== 'aEncaisser' && vols.map((v, i) => (
         <Carte key={v.id} style={{ gap: 4 }} onPress={() => nav.ouvrir({ ecran: 'formVol', eleveId: v.eleveId, id: v.id })}>
           {(i === 0 || vols[i - 1].date !== v.date) && <Titre>{formatDate(v.date)}</Titre>}
           <Ligne style={{ justifyContent: 'space-between' }}>

@@ -1,4 +1,5 @@
 import { toutesCompetences } from './fsvl';
+import { estPaye } from './paiements';
 import type { Eleve, Etape, Exigences, Id, ValidationCompetence, Vol } from './types';
 
 export interface Critere {
@@ -32,7 +33,8 @@ export function calculerProgression(
   exigences: Exigences,
   etapes: Etape[],
 ): Progression {
-  const siens = vols.filter((v) => v.eleveId === eleve.id);
+  // Seuls les vols validés (encaissés) par un moniteur comptent dans la progression et le carnet.
+  const siens = vols.filter((v) => v.eleveId === eleve.id && estPaye(v));
   const altitude = siens.filter((v) => v.type === 'altitude');
   const grandsVols = altitude.reduce((s, v) => s + v.nombre, 0);
   const volsPente = siens.filter((v) => v.type === 'pente').reduce((s, v) => s + v.nombre, 0);

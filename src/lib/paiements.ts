@@ -46,3 +46,24 @@ export function montantPropose(v: Pick<Vol, 'type' | 'nombre'>, t: Tarifs): numb
   const m = v.type === 'altitude' ? t.grandVol * v.nombre : t.penteEcole;
   return m > 0 ? m : undefined;
 }
+
+/** Vols notés mais pas encore encaissés / validés par un moniteur. */
+export const enAttente = (vols: Vol[]) => vols.filter((v) => !estPaye(v));
+
+/** Prix d'un vol : montant encaissé s'il est payé, sinon montant proposé par les tarifs. */
+export const prixVol = (v: Vol, t: Tarifs): number => v.paiement?.montant ?? montantPropose(v, t) ?? 0;
+
+/** Total à payer pour des vols en attente. */
+export const totalAPayer = (vols: Vol[], t: Tarifs): number =>
+  enAttente(vols).reduce((s, v) => s + prixVol(v, t), 0);
+
+/** Marque des vols comme payés et validés par le moniteur (encaissement groupé). */
+export function encaisser(
+  vols: Vol[],
+  moyen: MoyenPaiement,
+  moniteurId: string,
+  date: string,
+  t: Tarifs,
+): Vol[] {
+  return vols.map((v) => ({ ...v, paiement: { paye: true, montant: prixVol(v, t), moyen, moniteurId, date } }));
+}

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { alertesEleve } from '../src/lib/alertes';
+import { carnetHtml, volsDuCarnet } from '../src/lib/carnet';
 import { dateValide, donneesVides, normaliser } from '../src/lib/defaults';
 import { donneesDemo } from '../src/lib/demo';
 import { ETAPES, TOUTES_COMPETENCES } from '../src/lib/fsvl';
@@ -7,23 +8,25 @@ import { calculerProgression, joursAvant } from '../src/lib/progress';
 import type { Eleve, Site } from '../src/lib/types';
 import { ecartAngulaire, evaluer, parserPrevision, pointCardinal, urlPrevision, type HeureMeteo } from '../src/lib/weather';
 import { appliquer, retirer } from '../src/data/store';
-import { formatCHF, montantPropose, totaux } from '../src/lib/paiements';
+import { encaisser, formatCHF, montantPropose, totalAPayer, totaux } from '../src/lib/paiements';
 import { REGLAGES_DEFAUT } from '../src/lib/defaults';
 
 const eleve: Eleve = { id: 'e1', prenom: 'A', nom: 'B', dateDebut: '2026-01-01', examenTheorique: { branches: {} }, actif: true };
 const site: Site = { id: 's', type: 'decollage', nom: 'S', lat: 46.7, lon: 7.8, altitude: 1300, orientations: ['S'] };
+const P = { paiement: { paye: true, montant: 0, moyen: 'especes' as const } };
 const calme: HeureMeteo = {
   time: '2026-09-28T10:00', temperature: 15, vent: 8, rafales: 12, direction: 180,
   ventAltitude: 10, directionAltitude: 200, precipitation: 0, nuages: 10, cape: 0,
 };
 
 describe('progression', () => {
-  it('compte grands vols, sites et jours', () => {
+  it('compte les vols validés uniquement (le vol non encaissé est ignoré)', () => {
     const vols = [
-      { id: '1', eleveId: 'e1', date: '2026-02-01', decollageId: 'a', type: 'altitude' as const, nombre: 2 },
-      { id: '2', eleveId: 'e1', date: '2026-02-01', decollageId: 'b', type: 'altitude' as const, nombre: 1 },
-      { id: '3', eleveId: 'e1', date: '2026-02-02', type: 'pente' as const, nombre: 10 },
-      { id: '4', eleveId: 'autre', date: '2026-02-03', decollageId: 'c', type: 'altitude' as const, nombre: 5 },
+      { id: '1', eleveId: 'e1', date: '2026-02-01', decollageId: 'a', type: 'altitude' as const, nombre: 2, ...P },
+      { id: '2', eleveId: 'e1', date: '2026-02-01', decollageId: 'b', type: 'altitude' as const, nombre: 1, ...P },
+      { id: '3', eleveId: 'e1', date: '2026-02-02', type: 'pente' as const, nombre: 10, ...P },
+      { id: '5', eleveId: 'e1', date: '2026-02-04', decollageId: 'z', type: 'altitude' as const, nombre: 7 },
+      { id: '4', eleveId: 'autre', date: '2026-02-03', decollageId: 'c', type: 'altitude' as const, nombre: 5, ...P },
     ];
     const p = calculerProgression(eleve, vols, [], { volsPenteMin: 10, grandsVolsMin: 3, sitesDifferentsMin: 2 }, ETAPES);
     expect(p.grandsVols).toBe(3);
@@ -36,8 +39,8 @@ describe('progression', () => {
   it('est prêt quand tout est rempli', () => {
     const validations = TOUTES_COMPETENCES.map((c) => ({ eleveId: 'e1', competenceId: c.id, niveau: 'acquis' as const, date: '2026-01-01' }));
     const vols = [
-      { id: '1', eleveId: 'e1', date: '2026-02-01', decollageId: 'a', type: 'altitude' as const, nombre: 1 },
-      { id: '2', eleveId: 'e1', date: '2026-01-20', type: 'pente' as const, nombre: 5 },
+      { id: '1', eleveId: 'e1', date: '2026-02-01', decollageId: 'a', type: 'altitude' as const, nombre: 1, ...P },
+      { id: '2', eleveId: 'e1', date: '2026-01-20', type: 'pente' as const, nombre: 5, ...P },
     ];
     const p = calculerProgression(eleve, vols, validations, { volsPenteMin: 5, grandsVolsMin: 1, sitesDifferentsMin: 1 }, ETAPES);
     expect(p.pretExamenPratique).toBe(true);
@@ -180,5 +183,38 @@ describe('paiements', () => {
   it('formate les francs suisses', () => {
     expect(formatCHF(50)).toBe('CHF 50.–');
     expect(formatCHF(42.5)).toBe('CHF 42.50');
+  });
+
+  it('calcule le total à payer et valide les vols en une fois', () => {
+    const tarifs = { grandVol: 45, penteEcole: 180 };
+    const vols = [
+      { id: 'a', eleveId: 'e1', date: '2026-09-27', type: 'altitude', nombre: 2 },
+      { id: 'b', eleveId: 'e1', date: '2026-09-27', type: 'pente', nombre: 6 },
+      { id: 'c', eleveId: 'e1', date: '2026-09-20', type: 'altitude', nombre: 1, paiement: { paye: true, montant: 45 } },
+    ] as never[];
+    expect(totalAPayer(vols, tarifs)).toBe(270);
+    const valides = encaisser(vols.slice(0, 2), 'twint', 'm1', '2026-09-27', tarifs);
+    expect(valides.map((v) => v.paiement)).toEqual([
+      { paye: true, montant: 90, moyen: 'twint', moniteurId: 'm1', date: '2026-09-27' },
+      { paye: true, montant: 180, moyen: 'twint', moniteurId: 'm1', date: '2026-09-27' },
+    ]);
+    expect(totalAPayer(valides, tarifs)).toBe(0);
+  });
+});
+
+describe('carnet PDF', () => {
+  it('ne contient que les vols validés, dans l’ordre, avec échappement du texte', () => {
+    const d = donneesDemo();
+    d.vols.push({ id: 'x', eleveId: 'e-lea', date: '2020-01-01', type: 'altitude', nombre: 1, remarques: '<script>alert(1)</script>' });
+    const lea = d.eleves.find((e) => e.id === 'e-lea')!;
+    const carnet = volsDuCarnet('e-lea', d.vols);
+    expect(carnet.every((v) => v.paiement?.paye)).toBe(true);
+    expect(carnet.map((v) => v.date)).toEqual([...carnet.map((v) => v.date)].sort());
+    const html = carnetHtml({ ...lea, nom: 'D<b>' }, d, '2026-09-27');
+    expect(html).toContain('Carnet de vol');
+    expect(html).toContain('D&lt;b&gt;');
+    expect(html).not.toContain('<script>alert');
+    expect(html).toContain('Signature du moniteur');
+    expect((html.match(/<tr>\s*<td class="num">/g) ?? []).length).toBe(carnet.length);
   });
 });

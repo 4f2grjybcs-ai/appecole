@@ -5,7 +5,10 @@ import { aujourdhui, formatDate } from '../lib/defaults';
 import { BRANCHES_THEORIE } from '../lib/fsvl';
 import { alertesEleve } from '../lib/alertes';
 import { calculerProgression, niveauCompetence } from '../lib/progress';
-import type { Id, NiveauCompetence } from '../lib/types';
+import type { Id, NiveauCompetence, Vol } from '../lib/types';
+import { volsDuCarnet } from '../lib/carnet';
+import { enAttente, estPaye, formatCHF, prixVol, totalAPayer } from '../lib/paiements';
+import { exporterCarnet } from '../ui/exportPdf';
 import { useApp } from '../state/AppContext';
 import { Alerte, Barre, Bouton, C, Carte, Champ, Ecran, informer, Ligne, Puce, T, Titre } from '../ui/kit';
 import { useNav } from '../ui/nav';
@@ -19,6 +22,7 @@ export function FicheEleve({ id, lectureSeule }: { id: Id; lectureSeule?: boolea
   const nav = useNav();
   const [onglet, setOnglet] = useState<'progression' | 'vols' | 'competences' | 'infos'>('progression');
   const [emailInvit, setEmailInvit] = useState('');
+  const [msgExport, setMsgExport] = useState<string | null>(null);
   const eleve = data.eleves.find((e) => e.id === id);
 
   if (!eleve) {
@@ -30,9 +34,38 @@ export function FicheEleve({ id, lectureSeule }: { id: Id; lectureSeule?: boolea
   }
 
   const p = calculerProgression(eleve, data.vols, data.validations, data.reglages.exigences, data.reglages.etapes);
-  const vols = data.vols
-    .filter((v) => v.eleveId === id)
-    .sort((a, b) => b.date.localeCompare(a.date));
+  const attente = enAttente(data.vols.filter((v) => v.eleveId === id)).sort((a, b) => b.date.localeCompare(a.date));
+  const aPayer = totalAPayer(attente, data.reglages.tarifs);
+  const carnet = volsDuCarnet(id, data.vols).reverse();
+
+  const exporter = async () => {
+    setMsgExport(null);
+    try {
+      const r = await exporterCarnet(eleve, data);
+      if (r === 'apercu') setMsgExport('Dans l’aperçu web, l’export PDF n’est pas disponible : il fonctionne dans l’app installée.');
+    } catch (e) {
+      setMsgExport(`Export impossible : ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
+
+  const CarteVol = ({ v }: { v: Vol }) => (
+    <Carte onPress={() => nav.ouvrir({ ecran: 'formVol', eleveId: id, id: v.id })}>
+      <Ligne style={{ justifyContent: 'space-between' }}>
+        <T gras>{formatDate(v.date)}</T>
+        <T couleur={v.type === 'altitude' ? C.primaire : C.doux}>
+          {v.nombre} × {v.type === 'altitude' ? 'grand vol' : 'pente école'}
+        </T>
+      </Ligne>
+      <T doux>{nomSite(v.decollageId)} → {nomSite(v.atterrissageId)}</T>
+      <T doux>Moniteur : {nomMoniteur(v.moniteurId)}</T>
+      {!!v.conditions && <T doux>Conditions : {v.conditions}</T>}
+      {!!v.remarques && <T>{v.remarques}</T>}
+      <Ligne style={{ justifyContent: 'space-between' }}>
+        {estPaye(v) ? <StatutPaiement vol={v} /> : <T gras couleur={C.orange}>{formatCHF(prixVol(v, data.reglages.tarifs))} à payer</T>}
+        {v.saisiPar === 'eleve' && <T doux taille={12}>noté par l’élève</T>}
+      </Ligne>
+    </Carte>
+  );
   const nomSite = (sid?: string) => data.reglages.sites.find((s) => s.id === sid)?.nom ?? '—';
   const nomMoniteur = (mid?: string) => {
     const m = data.moniteurs.find((x) => x.id === mid);
@@ -61,7 +94,7 @@ export function FicheEleve({ id, lectureSeule }: { id: Id; lectureSeule?: boolea
     >
       <Ligne>
         <Puce texte="Progression" actif={onglet === 'progression'} onPress={() => setOnglet('progression')} />
-        <Puce texte={`Vols (${p.grandsVols + p.volsPente})`} actif={onglet === 'vols'} onPress={() => setOnglet('vols')} />
+        <Puce texte={`Vols${attente.length ? ` · ${attente.length} à valider` : ''}`} actif={onglet === 'vols'} onPress={() => setOnglet('vols')} />
         <Puce texte="Compétences" actif={onglet === 'competences'} onPress={() => setOnglet('competences')} />
         <Puce texte="Infos" actif={onglet === 'infos'} onPress={() => setOnglet('infos')} />
       </Ligne>
@@ -120,25 +153,31 @@ export function FicheEleve({ id, lectureSeule }: { id: Id; lectureSeule?: boolea
       {onglet === 'vols' && (
         <>
           <Bouton titre={lectureSeule ? '+ Noter mes vols' : '+ Ajouter des vols'} onPress={() => nav.ouvrir({ ecran: 'formVol', eleveId: id })} />
-          {vols.length === 0 && <T doux>Aucun vol enregistré.</T>}
-          {vols.map((v) => (
-            <Carte key={v.id} onPress={() => nav.ouvrir({ ecran: 'formVol', eleveId: id, id: v.id })}>
+
+          <Titre>À valider ({attente.length})</Titre>
+          {attente.length === 0 ? (
+            <T doux>Aucun vol en attente.</T>
+          ) : (
+            <Carte style={{ borderColor: C.orange }}>
               <Ligne style={{ justifyContent: 'space-between' }}>
-                <T gras>{formatDate(v.date)}</T>
-                <T couleur={v.type === 'altitude' ? C.primaire : C.doux}>
-                  {v.nombre} × {v.type === 'altitude' ? 'grand vol' : 'pente école'}
-                </T>
+                <T gras>Total à payer</T>
+                <T gras taille={20} couleur={C.orange}>{formatCHF(aPayer)}</T>
               </Ligne>
-              <T doux>{nomSite(v.decollageId)} → {nomSite(v.atterrissageId)}</T>
-              <T doux>Moniteur : {nomMoniteur(v.moniteurId)}</T>
-              {!!v.conditions && <T doux>Conditions : {v.conditions}</T>}
-              {!!v.remarques && <T>{v.remarques}</T>}
-              <Ligne style={{ justifyContent: 'space-between' }}>
-                <StatutPaiement vol={v} />
-                {v.saisiPar === 'eleve' && <T doux taille={12}>noté par l’élève</T>}
-              </Ligne>
+              <T doux taille={13}>
+                {lectureSeule
+                  ? 'À régler auprès du moniteur du jour. Vos vols entrent dans votre carnet dès qu’il les valide.'
+                  : 'Encaissez puis validez : les vols entrent dans le carnet de l’élève.'}
+              </T>
+              {!lectureSeule && <Bouton titre="Encaisser et valider" onPress={() => nav.ouvrir({ ecran: 'encaisser', eleveId: id })} />}
             </Carte>
-          ))}
+          )}
+          {attente.map((v) => <CarteVol key={v.id} v={v} />)}
+
+          <Titre>Carnet de vol ({carnet.length})</Titre>
+          <Bouton variante="contour" titre="📄 Exporter le carnet en PDF" onPress={exporter} />
+          {msgExport && <T doux taille={13}>{msgExport}</T>}
+          {carnet.length === 0 && <T doux>Aucun vol validé pour l’instant.</T>}
+          {carnet.map((v) => <CarteVol key={v.id} v={v} />)}
         </>
       )}
 
