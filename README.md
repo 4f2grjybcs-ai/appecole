@@ -72,6 +72,12 @@ prévu pour être relancé sans perte de données.
 Les notes internes des moniteurs sont masquées dans l'app élève, mais font partie de la fiche
 de l'élève : n'y mettez rien que l'élève ne devrait pas pouvoir lire.
 
+## Version web (Netlify)
+
+`netlify.toml` permet de publier la même app en version web, reliée au même Supabase :
+sur [app.netlify.com](https://app.netlify.com), « Import an existing project » → GitHub → ce dépôt →
+branche de travail. Le site se met à jour à chaque modification poussée.
+
 ## Publier sur l'App Store et Google Play
 
 Prérequis : un compte [Apple Developer](https://developer.apple.com/programs/) (99 USD / an)

@@ -1,0 +1,14 @@
+# Version web de l'app (mêmes écrans et mêmes données Supabase que l'app mobile).
+# Netlify construit le site à chaque modification poussée sur la branche choisie.
+[build]
+  command = "npx expo export --platform web"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# Application d'une seule page : toutes les adresses renvoient vers l'app.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
