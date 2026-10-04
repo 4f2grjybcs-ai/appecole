@@ -165,7 +165,34 @@ export interface AppData {
   vols: Vol[];
   validations: ValidationCompetence[];
   seances: Seance[];
+  /** Élèves du jour */
+  journees: Journee[];
+  /** Statut de chaque élève du jour (préparation, en vol, atterri) */
+  statuts: StatutJour[];
   reglages: Reglages;
+}
+
+/** Élèves du jour, choisis par le moniteur. */
+export interface Journee {
+  /** Identifiant = date (AAAA-MM-JJ) */
+  id: string;
+  date: string;
+  eleveIds: Id[];
+}
+
+export type StatutEleve = 'preparation' | 'vol' | 'atterri';
+
+/** Où en est un élève pendant la journée (vue d'ensemble pour les moniteurs). */
+export interface StatutJour {
+  /** Identifiant = date:élève */
+  id: string;
+  date: string;
+  eleveId: Id;
+  statut: StatutEleve;
+  /** Exercice(s) du vol en cours */
+  exercices: string[];
+  /** Moment de la mise en vol (ms), pour trier dans l'ordre des décollages */
+  ordre?: number;
 }
 
 export type Session =

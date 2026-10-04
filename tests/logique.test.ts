@@ -8,6 +8,7 @@ import { calculerProgression, joursAvant } from '../src/lib/progress';
 import type { Eleve, Site } from '../src/lib/types';
 import { ecartAngulaire, evaluer, parserPrevision, pointCardinal, urlPrevision, type HeureMeteo } from '../src/lib/weather';
 import { appliquer, retirer } from '../src/data/store';
+import { changerStatut, etatsDuJour, parOrdreDeDecollage } from '../src/lib/journee';
 import { encaisser, formatCHF, montantPropose, totalAPayer, totaux } from '../src/lib/paiements';
 import { REGLAGES_DEFAUT } from '../src/lib/defaults';
 
@@ -226,5 +227,27 @@ describe('carnet PDF', () => {
     const html = carnetHtml(d.eleves[0], d, '2026-09-27');
     expect(html).toContain('Grandes oreilles, Approche en U / en 8<br>Oreilles tenues 30 s');
     expect(libellesExercices(['oreilles', 'inconnue'], ETAPES)).toEqual(['Grandes oreilles']);
+  });
+});
+
+describe('journée de vol', () => {
+  it('suit le statut des élèves dans l’ordre des décollages', () => {
+    let d = donneesVides();
+    const date = '2026-10-04';
+    for (const id of ['a', 'b', 'c']) d = appliquer(d, 'eleve', { ...eleve, id, prenom: id });
+    d = appliquer(d, 'journee', { id: date, date, eleveIds: ['a', 'b', 'c'] });
+    const etat = (id: string) => etatsDuJour(d, d.journees[0]).find((e) => e.eleve.id === id)!;
+
+    expect(etatsDuJour(d, d.journees[0]).every((e) => e.statut === 'preparation')).toBe(true);
+    d = appliquer(d, 'statut', changerStatut(date, etat('c'), 'vol', ['oreilles'], 100));
+    d = appliquer(d, 'statut', changerStatut(date, etat('a'), 'vol', [], 200));
+    const enVol = etatsDuJour(d, d.journees[0]).filter((e) => e.statut === 'vol').sort(parOrdreDeDecollage);
+    expect(enVol.map((e) => e.eleve.id)).toEqual(['c', 'a']);
+
+    d = appliquer(d, 'statut', changerStatut(date, etat('c'), 'atterri', etat('c').exercices, 300));
+    expect(etat('c')).toMatchObject({ statut: 'atterri', ordre: 100, exercices: ['oreilles'] });
+    d = appliquer(d, 'statut', changerStatut(date, etat('c'), 'preparation', [], 400));
+    expect(etat('c').ordre).toBeUndefined();
+    expect(d.statuts).toHaveLength(2);
   });
 });

@@ -1,7 +1,7 @@
-import type { AppData, Eleve, Moniteur, Reglages, Seance, ValidationCompetence, Vol } from '../lib/types';
+import type { AppData, Eleve, Journee, Moniteur, Reglages, Seance, StatutJour, ValidationCompetence, Vol } from '../lib/types';
 
 /** Types d'enregistrements stockés, avec la clé de collection dans AppData. */
-export type Kind = 'moniteur' | 'eleve' | 'vol' | 'validation' | 'seance' | 'reglages';
+export type Kind = 'moniteur' | 'eleve' | 'vol' | 'validation' | 'seance' | 'journee' | 'statut' | 'reglages';
 
 export interface RecordOf {
   moniteur: Moniteur;
@@ -9,6 +9,8 @@ export interface RecordOf {
   vol: Vol;
   validation: ValidationCompetence;
   seance: Seance;
+  journee: Journee;
+  statut: StatutJour;
   reglages: Reglages;
 }
 
@@ -18,6 +20,8 @@ export const COLLECTION = {
   vol: 'vols',
   validation: 'validations',
   seance: 'seances',
+  journee: 'journees',
+  statut: 'statuts',
 } as const;
 
 export function idOf<K extends Kind>(kind: K, r: RecordOf[K]): string {
@@ -32,7 +36,7 @@ export function idOf<K extends Kind>(kind: K, r: RecordOf[K]): string {
 /** Élève concerné par un enregistrement (pour les droits de lecture des élèves). */
 export function eleveIdOf<K extends Kind>(kind: K, r: RecordOf[K]): string | null {
   if (kind === 'eleve') return (r as Eleve).id;
-  if (kind === 'vol' || kind === 'validation') return (r as Vol).eleveId;
+  if (kind === 'vol' || kind === 'validation' || kind === 'statut') return (r as Vol).eleveId;
   return null;
 }
 

@@ -11,6 +11,8 @@ selon les directives de formation FSVL.
   les vols en une fois ; seuls les vols validés entrent dans le carnet et comptent dans la progression.
 - **Export PDF du carnet** avec résumé, vols, compétences et cases de signature (élève, moniteur),
   à présenter pour l'inscription à l'examen.
+- **Aujourd'hui** (moniteurs) : élèves du jour et leur statut — en préparation, en vol (avec
+  l'exercice), atterri — dans l'ordre des décollages, partagé entre les téléphones des moniteurs.
 - **Moniteurs** : fiches élèves, validation des compétences, onglet Vols (à encaisser, total du jour),
   planning des séances, décollages et atterrissages, liste de compétences modifiable, tarifs, réglages.
 - **Progression** : vols en pente école (nombre, sans minimum), grands vols, sites différents,

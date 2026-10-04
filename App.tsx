@@ -4,6 +4,7 @@ import { ActivityIndicator, BackHandler, Pressable, Text, View } from 'react-nat
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Connexion } from './src/screens/Connexion';
 import { Eleves } from './src/screens/Eleves';
+import { Journee } from './src/screens/Journee';
 import { Encaisser } from './src/screens/Encaisser';
 import { FormCompetences } from './src/screens/FormCompetences';
 import { FicheEleve } from './src/screens/FicheEleve';
@@ -19,6 +20,7 @@ import { NavContext, type Nav, type Route } from './src/ui/nav';
 type Onglet = { id: string; libelle: string; icone: string };
 
 const ONGLETS_MONITEUR: Onglet[] = [
+  { id: 'journee', libelle: 'Aujourd’hui', icone: '📋' },
   { id: 'eleves', libelle: 'Élèves', icone: '🎓' },
   { id: 'vols', libelle: 'Vols', icone: '🪂' },
   { id: 'planning', libelle: 'Planning', icone: '📅' },
@@ -121,6 +123,7 @@ function Principal() {
 function EcranOnglet({ onglet }: { onglet: string }) {
   const { session } = useApp();
   switch (onglet) {
+    case 'journee': return <Journee />;
     case 'eleves': return <Eleves />;
     case 'formation': return <FicheEleve id={session!.id} lectureSeule />;
     case 'vols': return <Vols />;

@@ -24,6 +24,8 @@ export function donneesVides(): AppData {
     vols: [],
     validations: [],
     seances: [],
+    journees: [],
+    statuts: [],
     reglages: REGLAGES_DEFAUT,
   };
 }
@@ -66,6 +68,8 @@ export function normaliser(d: AppData): AppData {
     ...d,
     vols: d.vols.map(migrer),
     seances: d.seances.map(migrer),
+    journees: d.journees ?? [],
+    statuts: d.statuts ?? [],
     eleves: d.eleves.map((e) => {
       const { assuranceValidite: _, ...reste } = e as typeof e & { assuranceValidite?: string };
       return reste;

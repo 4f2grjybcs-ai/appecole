@@ -69,9 +69,18 @@ export function donneesDemo(): AppData {
         id: 'e-tom', prenom: 'Tom', nom: 'Démo', dateDebut: jour(-5), moniteurRefId: 'm-anna',
         examenTheorique: { branches: {} }, actif: true,
       },
+      {
+        id: 'e-nina', prenom: 'Nina', nom: 'Démo', dateDebut: jour(-40), moniteurRefId: 'm-anna',
+        examenTheorique: { branches: {} }, actif: true,
+      },
     ],
     vols,
     validations,
+    journees: [{ id: jour(0), date: jour(0), eleveIds: ['e-lea', 'e-tom', 'e-nina'] }],
+    statuts: [
+      { id: `${jour(0)}:e-lea`, date: jour(0), eleveId: 'e-lea', statut: 'vol', exercices: ['oreilles'], ordre: 1 },
+      { id: `${jour(0)}:e-nina`, date: jour(0), eleveId: 'e-nina', statut: 'vol', exercices: ['virages', 'approche'], ordre: 2 },
+    ],
     seances: [
       {
         id: 's1', date: jour(1), heureDebut: '08:30', heureFin: '12:00', titre: 'Grands vols',

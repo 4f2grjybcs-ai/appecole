@@ -160,7 +160,7 @@ interface VolSaisi {
 
 const entier = (t: string) => (t.trim() === '' ? 0 : parseInt(t, 10));
 
-function ChoixExercices({ valeur, onChange }: { valeur: string[]; onChange: (ids: string[]) => void }) {
+export function ChoixExercices({ valeur, onChange }: { valeur: string[]; onChange: (ids: string[]) => void }) {
   const { data } = useApp();
   const [ouvert, setOuvert] = useState(false);
   const choisis = libellesExercices(valeur, data.reglages.etapes);

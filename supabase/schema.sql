@@ -40,6 +40,11 @@ create table if not exists public.records (
   primary key (ecole_id, kind, id)
 );
 
+-- Types d'enregistrements autorisés (mis à jour si le schéma a déjà été installé)
+alter table public.records drop constraint if exists records_kind_check;
+alter table public.records add constraint records_kind_check
+  check (kind in ('moniteur', 'eleve', 'vol', 'validation', 'seance', 'journee', 'statut', 'reglages'));
+
 create index if not exists records_eleve on public.records (ecole_id, eleve_id);
 
 -- Fonctions d'aide (security definer pour éviter la récursion des policies)
