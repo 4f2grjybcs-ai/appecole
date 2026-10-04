@@ -4,6 +4,7 @@ import type { Exigences, SeuilsMeteo, Tarifs } from '../lib/types';
 import { useApp } from '../state/AppContext';
 import { Alerte, Bouton, C, Carte, Champ, confirmer, Ecran, informer, Ligne, T, Titre } from '../ui/kit';
 import { useNav } from '../ui/nav';
+import { ChangerMotDePasse } from './MotDePasse';
 
 const CHAMPS_SEUILS: { cle: keyof SeuilsMeteo; libelle: string }[] = [
   { cle: 'ventMaxKmh', libelle: 'Vent moyen max (km/h)' },
@@ -79,6 +80,7 @@ export function Reglages() {
         <T doux taille={13}>{mode === 'local' ? 'Mode démo (données sur cet appareil)' : 'Données synchronisées (Supabase)'}</T>
         <Bouton variante="contour" titre="Se déconnecter" onPress={deconnexion} />
       </Carte>
+      <ChangerMotDePasse />
 
       <Titre>École</Titre>
       <Carte>

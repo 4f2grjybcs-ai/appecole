@@ -99,8 +99,11 @@ dans le cloud (pas besoin de Xcode).
 
 Pour la publication sur l'App Store (et non seulement TestFlight) : captures d'écran, description et
 politique de confidentialité (l'app stocke des données personnelles d'élèves : LPD suisse).
-Pour les e-mails de connexion, configurer un serveur SMTP dans Supabase (Authentication → SMTP) :
-l'envoi intégré de Supabase est limité à quelques e-mails par heure.
+Comptes : le plus simple est de créer chaque compte dans Supabase (Authentication → Users →
+Add user → Create new user, e-mail + mot de passe, « Auto Confirm User » coché) puis d'inviter
+la personne depuis l'app avec la même adresse ; elle se connecte avec son mot de passe et peut le
+changer dans l'app. Aucun e-mail n'est alors envoyé. La connexion par code e-mail reste possible,
+mais l'envoi intégré de Supabase est limité à quelques e-mails par heure (sinon configurer un SMTP).
 
 ## Développement
 

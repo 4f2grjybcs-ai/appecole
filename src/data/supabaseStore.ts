@@ -31,12 +31,33 @@ export interface Membre {
   session: Session;
 }
 
+/** Messages d'erreur de connexion compréhensibles. */
+function traduire(e: { message: string }): Error {
+  const m = e.message.toLowerCase();
+  if (m.includes('invalid login credentials')) return new Error('E-mail ou mot de passe incorrect.');
+  if (m.includes('email not confirmed')) return new Error('Compte non confirmé : dans Supabase, cochez « Auto Confirm User » à la création du compte.');
+  if (m.includes('password should be at least')) return new Error('Le mot de passe doit contenir au moins 6 caractères.');
+  if (m.includes('rate limit')) return new Error('Trop d’e-mails envoyés : réessayez plus tard ou connectez-vous avec votre mot de passe.');
+  return new Error(e.message);
+}
+
+/** Connexion avec e-mail et mot de passe (comptes créés par l'école dans Supabase). */
+export async function connecterMotDePasse(email: string, motDePasse: string) {
+  const { error } = await client().auth.signInWithPassword({ email: email.trim().toLowerCase(), password: motDePasse });
+  if (error) throw traduire(error);
+}
+
+export async function changerMotDePasse(motDePasse: string) {
+  const { error } = await client().auth.updateUser({ password: motDePasse });
+  if (error) throw traduire(error);
+}
+
 export async function envoyerCode(email: string) {
   const { error } = await client().auth.signInWithOtp({
     email: email.trim().toLowerCase(),
     options: { shouldCreateUser: true },
   });
-  if (error) throw error;
+  if (error) throw traduire(error);
 }
 
 export async function verifierCode(email: string, code: string) {

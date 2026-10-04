@@ -52,7 +52,8 @@ function ConnexionSupabase() {
   const { emailSansEcole, apresConnexion, creerEcole, deconnexion, erreur } = useApp();
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
-  const [etape, setEtape] = useState<'email' | 'code'>('email');
+  const [etape, setEtape] = useState<'motdepasse' | 'email' | 'code'>('motdepasse');
+  const [motDePasse, setMotDePasse] = useState('');
   const [occupe, setOccupe] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [ecole, setEcole] = useState({ nom: '', prenom: '', nomFamille: '' });
@@ -100,16 +101,37 @@ function ConnexionSupabase() {
   return (
     <Ecran titre="Connexion">
       <Carte>
-        {etape === 'email' ? (
+        <Champ
+          label="Adresse e-mail"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+          autoComplete="email"
+        />
+        {etape === 'motdepasse' && (
           <>
             <Champ
-              label="Adresse e-mail"
-              value={email}
-              onChangeText={setEmail}
+              label="Mot de passe"
+              value={motDePasse}
+              onChangeText={setMotDePasse}
+              secureTextEntry
               autoCapitalize="none"
-              keyboardType="email-address"
-              autoComplete="email"
+              autoComplete="password"
             />
+            <Bouton
+              titre="Se connecter"
+              desactive={occupe || !email.includes('@') || !motDePasse}
+              onPress={() => executer(async () => {
+                await sb.connecterMotDePasse(email, motDePasse);
+                await apresConnexion();
+              })}
+            />
+            <Bouton variante="contour" titre="Recevoir plutôt un code par e-mail" onPress={() => setEtape('email')} />
+          </>
+        )}
+        {etape === 'email' && (
+          <>
             <Bouton
               titre="Recevoir un code"
               desactive={occupe || !email.includes('@')}
@@ -118,8 +140,10 @@ function ConnexionSupabase() {
                 setEtape('code');
               })}
             />
+            <Bouton variante="contour" titre="J’ai un mot de passe" onPress={() => setEtape('motdepasse')} />
           </>
-        ) : (
+        )}
+        {etape === 'code' && (
           <>
             <T>Un code a été envoyé à <T gras>{email}</T>.</T>
             <Champ label="Code reçu par e-mail" value={code} onChangeText={setCode} keyboardType="number-pad" />
@@ -131,12 +155,13 @@ function ConnexionSupabase() {
                 await apresConnexion();
               })}
             />
-            <Bouton variante="contour" titre="Changer d’adresse" onPress={() => setEtape('email')} />
+            <Bouton variante="contour" titre="Retour" onPress={() => setEtape('motdepasse')} />
           </>
         )}
         {occupe && <View style={{ alignItems: 'center' }}><ActivityIndicator color={C.primaire} /></View>}
       </Carte>
       {(msg || erreur) && <Alerte niveau="rouge" texte={msg ?? erreur!} />}
+      <T doux taille={13}>Pas encore de compte ? Demandez à votre école de vous en créer un.</T>
     </Ecran>
   );
 }

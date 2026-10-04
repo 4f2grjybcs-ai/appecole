@@ -12,6 +12,7 @@ import { FormLiensMeteo } from './src/screens/FormLiensMeteo';
 import { FicheEleve } from './src/screens/FicheEleve';
 import { FormEleve, FormMoniteur, FormSeance, FormSite, FormVol } from './src/screens/Formulaires';
 import { Meteo } from './src/screens/Meteo';
+import { ChangerMotDePasse } from './src/screens/MotDePasse';
 import { Planning } from './src/screens/Planning';
 import { Reglages } from './src/screens/Reglages';
 import { Vols } from './src/screens/Vols';
@@ -201,6 +202,7 @@ function Compte() {
             Moniteur référent : {m.prenom} {m.nom}{m.tel ? ` · ${m.tel}` : ''}
           </Text>
         )}
+        <ChangerMotDePasse />
         <Pressable onPress={deconnexion} style={{ borderWidth: 1.5, borderColor: C.primaire, borderRadius: 10, padding: 12, alignItems: 'center' }}>
           <Text style={{ color: C.primaire, fontWeight: '600' }}>Se déconnecter</Text>
         </Pressable>
