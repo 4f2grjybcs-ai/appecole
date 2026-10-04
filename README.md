@@ -20,6 +20,8 @@ selon les directives de formation FSVL.
 - **Liens et contenus météo** gérés par les moniteurs depuis l'app : boutons vers des sites, ou pages,
   webcams et codes d'intégration (<iframe>, ex. Windy) affichés directement dans l'écran Météo.
 - **Discussion** : canal École (moniteurs et élèves) et canal Moniteurs (réservé aux moniteurs).
+- **Temps réel** (avec Supabase) : messages, statuts du jour, vols et réglages apparaissent sur les
+  autres téléphones en une seconde environ.
 - **Navigation** : 3 boutons principaux en bas de l'écran et un menu ☰ pour le reste.
 - **Coin météo** : prévisions heure par heure pour chaque site (vent, rafales, vent vers 1500 m,
   pluie, instabilité), avec une indication favorable / limite / défavorable selon les seuils de

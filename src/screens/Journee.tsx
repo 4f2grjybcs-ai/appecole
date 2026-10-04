@@ -20,10 +20,10 @@ export function Journee() {
   const [choixEleves, setChoixEleves] = useState(journee.eleveIds.length === 0);
   const [onglet, setOnglet] = useState<StatutEleve | 'tous'>('tous');
 
-  // Avec Supabase, les téléphones des moniteurs se mettent à jour régulièrement.
+  // Mises à jour en temps réel ; rechargement complet de sécurité chaque minute.
   useEffect(() => {
     if (mode !== 'supabase') return;
-    const t = setInterval(rafraichir, 15_000);
+    const t = setInterval(rafraichir, 60_000);
     return () => clearInterval(t);
   }, [mode, rafraichir]);
 
@@ -115,7 +115,7 @@ export function Journee() {
       {mode === 'local' && (
         <T doux taille={12}>
           Mode démo : la liste n’est partagée entre les téléphones des moniteurs qu’une fois Supabase configuré
-          (mise à jour toutes les 15 secondes).
+          (mise à jour en temps réel).
         </T>
       )}
     </Ecran>

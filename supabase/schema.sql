@@ -164,6 +164,18 @@ create policy messages_eleves_suppression on public.records for delete
     and kind = 'message' and data ->> 'auteurId' = public.ma_personne()
   );
 
+-- Temps réel : diffuse les changements de records aux appareils connectés
+-- (chacun ne reçoit que les lignes que les règles ci-dessus l'autorisent à lire).
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'records'
+  ) then
+    alter publication supabase_realtime add table public.records;
+  end if;
+end $$;
+
 -- Création d'une école par son premier moniteur.
 create or replace function public.creer_ecole(p_nom text, p_personne_id text) returns uuid
 language plpgsql security definer set search_path = public as $$

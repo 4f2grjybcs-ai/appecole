@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AppState } from 'react-native';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { localStore } from '../data/localStore';
 import { appliquer, retirer, type Kind, type RecordOf, type Store } from '../data/store';
@@ -51,6 +52,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const storeRef = useRef<Store>(localStore);
   const dataRef = useRef(data);
   dataRef.current = data;
+
+  // Temps réel (Supabase) : les changements des autres appareils arrivent en direct.
+  useEffect(() => {
+    if (mode !== 'supabase' || !ecoleId) return;
+    const arreter = sb.ecouterChangements(
+      ecoleId,
+      (c) => {
+        const d = dataRef.current;
+        const apres =
+          c.type === 'enregistre'
+            ? appliquer(d, c.kind, c.data)
+            : c.kind === 'reglages'
+              ? d
+              : retirer(d, c.kind, c.id);
+        dataRef.current = apres;
+        setData(apres);
+      },
+      () => {
+        storeRef.current.charger().then((d) => setData(normaliser(d))).catch(() => {});
+      },
+    );
+    // Au retour dans l'app (téléphone déverrouillé…), on recharge les données.
+    const sub = AppState.addEventListener('change', (etat) => {
+      if (etat === 'active') storeRef.current.charger().then((d) => setData(normaliser(d))).catch(() => {});
+    });
+    return () => {
+      arreter();
+      sub.remove();
+    };
+  }, [mode, ecoleId]);
 
   const signaler = (e: unknown) => setErreur(e instanceof Error ? e.message : String(e));
 

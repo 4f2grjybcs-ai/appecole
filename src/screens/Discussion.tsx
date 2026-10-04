@@ -16,10 +16,10 @@ export function Discussion() {
   const messages = messagesDuCanal(data.messages, canal);
   const ajd = aujourdhui();
 
-  // Avec Supabase, les nouveaux messages arrivent toutes les 10 secondes.
+  // Les messages arrivent en temps réel ; rechargement complet de sécurité chaque minute.
   useEffect(() => {
     if (mode !== 'supabase') return;
-    const t = setInterval(rafraichir, 10_000);
+    const t = setInterval(rafraichir, 60_000);
     return () => clearInterval(t);
   }, [mode, rafraichir]);
 

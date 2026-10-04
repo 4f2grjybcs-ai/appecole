@@ -137,3 +137,47 @@ export function supabaseStore(ecoleId: string): Store {
     },
   };
 }
+
+export type Changement =
+  | { type: 'enregistre'; kind: Kind; data: RecordOf[Kind] }
+  | { type: 'supprime'; kind: Kind; id: string };
+
+/**
+ * Temps réel : reçoit en direct les ajouts, modifications et suppressions faits sur les
+ * autres appareils (discussion, statuts du jour, vols…). Les règles d'accès (RLS)
+ * s'appliquent : chacun ne reçoit que ce qu'il a le droit de lire.
+ */
+export function ecouterChangements(
+  ecoleId: string,
+  surChangement: (c: Changement) => void,
+  surReconnexion: () => void,
+): () => void {
+  const c = client();
+  let dejaConnecte = false;
+  const canal = c
+    .channel(`records-${ecoleId}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'records', filter: `ecole_id=eq.${ecoleId}` },
+      (p) => {
+        if (p.eventType === 'DELETE') {
+          // Les suppressions ne sont pas filtrées côté serveur : on vérifie l'école ici.
+          const ancien = p.old as { ecole_id?: string; kind?: Kind; id?: string };
+          if (ancien.ecole_id === ecoleId && ancien.kind && ancien.id) surChangement({ type: 'supprime', kind: ancien.kind, id: ancien.id });
+        } else {
+          const nouveau = p.new as unknown as Ligne;
+          surChangement({ type: 'enregistre', kind: nouveau.kind, data: nouveau.data });
+        }
+      },
+    )
+    .subscribe((statut) => {
+      // Après une coupure réseau, on recharge tout pour ne rien manquer.
+      if (statut === 'SUBSCRIBED') {
+        if (dejaConnecte) surReconnexion();
+        dejaConnecte = true;
+      }
+    });
+  return () => {
+    c.removeChannel(canal);
+  };
+}
