@@ -1,14 +1,14 @@
 {
   "expo": {
-    "name": "École Parapente",
-    "slug": "appecole",
+    "name": "Flyverbier.ch",
+    "slug": "flyverbier",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "ch.appecole.parapente",
+      "bundleIdentifier": "ch.flyverbier.app",
       "config": {
         "usesNonExemptEncryption": false
       }
@@ -21,11 +21,11 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "ch.appecole.parapente"
+      "package": "ch.flyverbier.app"
     },
     "web": {
       "favicon": "./assets/favicon.png",
-      "name": "École Parapente"
+      "name": "Flyverbier.ch"
     },
     "splash": {
       "image": "./assets/splash-icon.png",

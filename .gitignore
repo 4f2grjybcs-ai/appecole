@@ -40,5 +40,3 @@ yarn-error.*
 /ios
 /android
 
-# Supabase (copier .env.example vers .env)
-.env
