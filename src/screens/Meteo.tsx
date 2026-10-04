@@ -4,18 +4,45 @@ import { APERCU, previsionExemple } from '../lib/apercu';
 import { formatDate } from '../lib/defaults';
 import type { Site } from '../lib/types';
 import { chargerPrevision, evaluer, pointCardinal, type HeureMeteo, type Verdict } from '../lib/weather';
+import { estHtml } from '../lib/meteoLiens';
 import { useApp } from '../state/AppContext';
+import { Integre } from '../ui/Integre';
+import { useNav } from '../ui/nav';
 import { Alerte, Bouton, C, Carte, Ecran, Ligne, Puce, T, Titre } from '../ui/kit';
 
 const COULEUR: Record<Verdict, string> = { favorable: C.vert, limite: C.orange, defavorable: C.rouge };
 const LIBELLE: Record<Verdict, string> = { favorable: 'Favorable', limite: 'Limite', defavorable: 'Défavorable' };
 const HEURES_VOL = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
 
-const LIENS = [
-  { titre: 'MeteoSwiss – prévisions', url: 'https://www.meteoswiss.admin.ch' },
-  { titre: 'Stations de vent (winds.mobi)', url: 'https://winds.mobi' },
-  { titre: 'Bulletin vol libre FSVL', url: 'https://www.shv-fsvl.ch' },
-];
+/** Liens et contenus intégrés choisis par les moniteurs (modifiables depuis l'app). */
+function ContenusEcole() {
+  const { data, session } = useApp();
+  const nav = useNav();
+  const liens = data.reglages.meteoLiens;
+  const estMoniteur = session?.role === 'moniteur';
+  if (liens.length === 0 && !estMoniteur) return null;
+  return (
+    <>
+      <Ligne style={{ justifyContent: 'space-between' }}>
+        <Titre>Liens et contenus de l’école</Titre>
+        {estMoniteur && <Bouton petit variante="contour" titre="Modifier" onPress={() => nav.ouvrir({ ecran: 'formLiensMeteo' })} />}
+      </Ligne>
+      {liens.length === 0 && <T doux>Ajoutez des liens ou des contenus intégrés (webcam, carte Windy…) avec « Modifier ».</T>}
+      {liens.filter((l) => l.affichage === 'integre').map((l) => (
+        <Carte key={l.id} style={{ gap: 6 }}>
+          <Ligne style={{ justifyContent: 'space-between' }}>
+            <T gras>{l.titre}</T>
+            {!estHtml(l.contenu) && <Bouton petit variante="contour" titre="Ouvrir ↗" onPress={() => Linking.openURL(l.contenu.trim())} />}
+          </Ligne>
+          <Integre contenu={l.contenu} hauteur={l.hauteur} />
+        </Carte>
+      ))}
+      {liens.filter((l) => l.affichage === 'lien').map((l) => (
+        <Bouton key={l.id} variante="contour" titre={`${l.titre} ↗`} onPress={() => Linking.openURL(l.contenu.trim())} />
+      ))}
+    </>
+  );
+}
 
 export function Meteo() {
   const { data } = useApp();
@@ -25,6 +52,8 @@ export function Meteo() {
 
   return (
     <Ecran titre="Météo">
+      <ContenusEcole />
+      <Titre>Prévisions par site</Titre>
       {sites.length === 0 ? (
         <T doux>Ajoutez vos décollages et atterrissages dans Réglages pour afficher les prévisions.</T>
       ) : (
@@ -46,10 +75,6 @@ export function Meteo() {
           {site && <Previsions site={site} />}
         </>
       )}
-      <Titre>Liens utiles</Titre>
-      {LIENS.map((l) => (
-        <Bouton key={l.url} variante="contour" titre={l.titre} onPress={() => Linking.openURL(l.url)} />
-      ))}
       <T doux taille={12}>
         Indication automatique basée sur le modèle Open-Meteo (données MeteoSwiss). Elle ne remplace jamais
         l’analyse du moniteur sur le terrain.

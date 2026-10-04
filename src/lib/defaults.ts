@@ -1,4 +1,5 @@
 import { ETAPES, EXIGENCES_DEFAUT } from './fsvl';
+import { LIENS_METEO_DEFAUT } from './meteoLiens';
 import type { AppData, Reglages } from './types';
 
 export const REGLAGES_DEFAUT: Reglages = {
@@ -14,6 +15,7 @@ export const REGLAGES_DEFAUT: Reglages = {
   exigences: EXIGENCES_DEFAUT,
   etapes: ETAPES,
   tarifs: { grandVol: 0, penteEcole: 0, navette: 0 },
+  meteoLiens: LIENS_METEO_DEFAUT,
 };
 
 export function donneesVides(): AppData {
@@ -77,6 +79,7 @@ export function normaliser(d: AppData): AppData {
     reglages: {
       ...d.reglages,
       etapes: d.reglages.etapes ?? ETAPES,
+      meteoLiens: d.reglages.meteoLiens ?? LIENS_METEO_DEFAUT,
       tarifs: { ...REGLAGES_DEFAUT.tarifs, ...d.reglages.tarifs },
       exigences: {
         grandsVolsMin: d.reglages.exigences?.grandsVolsMin ?? EXIGENCES_DEFAUT.grandsVolsMin,

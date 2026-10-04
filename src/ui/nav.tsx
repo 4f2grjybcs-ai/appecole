@@ -10,7 +10,8 @@ export type Route =
   | { ecran: 'formSite'; type: TypeSite; id?: Id }
   | { ecran: 'formMoniteur'; id?: Id }
   | { ecran: 'formCompetences' }
-  | { ecran: 'encaisser'; eleveId: Id };
+  | { ecran: 'encaisser'; eleveId: Id }
+  | { ecran: 'formLiensMeteo' };
 
 export interface Nav {
   ouvrir(r: Route): void;

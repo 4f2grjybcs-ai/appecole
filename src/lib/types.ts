@@ -147,6 +147,19 @@ export interface Reglages {
   etapes: Etape[];
   /** Tarifs proposés par défaut lors de l'encaissement (CHF) */
   tarifs: Tarifs;
+  /** Liens et contenus intégrés de l'écran Météo, gérés par les moniteurs */
+  meteoLiens: LienMeteo[];
+}
+
+/** Lien (bouton) ou contenu intégré (page, webcam, code <iframe>) de l'écran Météo. */
+export interface LienMeteo {
+  id: Id;
+  titre: string;
+  /** Adresse https://… ou code HTML d'intégration (<iframe …>) */
+  contenu: string;
+  affichage: 'lien' | 'integre';
+  /** Hauteur du contenu intégré, en points */
+  hauteur: number;
 }
 
 export interface Tarifs {

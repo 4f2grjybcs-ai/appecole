@@ -7,6 +7,7 @@ import { Eleves } from './src/screens/Eleves';
 import { Journee } from './src/screens/Journee';
 import { Encaisser } from './src/screens/Encaisser';
 import { FormCompetences } from './src/screens/FormCompetences';
+import { FormLiensMeteo } from './src/screens/FormLiensMeteo';
 import { FicheEleve } from './src/screens/FicheEleve';
 import { FormEleve, FormMoniteur, FormSeance, FormSite, FormVol } from './src/screens/Formulaires';
 import { Meteo } from './src/screens/Meteo';
@@ -144,6 +145,7 @@ function EcranPile({ route }: { route: Route }) {
     case 'formMoniteur': return <FormMoniteur id={route.id} />;
     case 'formCompetences': return <FormCompetences />;
     case 'encaisser': return <Encaisser eleveId={route.eleveId} />;
+    case 'formLiensMeteo': return <FormLiensMeteo />;
   }
 }
 

@@ -17,6 +17,8 @@ selon les directives de formation FSVL.
   planning des séances, décollages et atterrissages, liste de compétences modifiable, tarifs, réglages.
 - **Progression** : vols en pente école (nombre, sans minimum), grands vols, sites différents,
   compétences acquises.
+- **Liens et contenus météo** gérés par les moniteurs depuis l'app : boutons vers des sites, ou pages,
+  webcams et codes d'intégration (<iframe>, ex. Windy) affichés directement dans l'écran Météo.
 - **Coin météo** : prévisions heure par heure pour chaque site (vent, rafales, vent vers 1500 m,
   pluie, instabilité), avec une indication favorable / limite / défavorable selon les seuils de
   l'école et l'orientation du décollage. Données Open-Meteo (modèles MeteoSwiss), sans clé d'API.

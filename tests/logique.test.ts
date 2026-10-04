@@ -8,6 +8,7 @@ import { calculerProgression, joursAvant } from '../src/lib/progress';
 import type { Eleve, Site } from '../src/lib/types';
 import { ecartAngulaire, evaluer, parserPrevision, pointCardinal, urlPrevision, type HeureMeteo } from '../src/lib/weather';
 import { appliquer, retirer } from '../src/data/store';
+import { estHtml, LIENS_METEO_DEFAUT, verifierLien } from '../src/lib/meteoLiens';
 import { changerStatut, etatsDuJour, parOrdreDeDecollage } from '../src/lib/journee';
 import { encaisser, formatCHF, montantPropose, totalAPayer, totaux } from '../src/lib/paiements';
 import { REGLAGES_DEFAUT } from '../src/lib/defaults';
@@ -249,5 +250,21 @@ describe('journée de vol', () => {
     d = appliquer(d, 'statut', changerStatut(date, etat('c'), 'preparation', [], 400));
     expect(etat('c').ordre).toBeUndefined();
     expect(d.statuts).toHaveLength(2);
+  });
+});
+
+describe('liens météo', () => {
+  it('vérifie adresses et codes d’intégration', () => {
+    expect(verifierLien({ titre: 'Windy', contenu: 'https://embed.windy.com/embed.html', affichage: 'integre' })).toBeNull();
+    expect(verifierLien({ titre: 'Code', contenu: '<iframe src="https://x"></iframe>', affichage: 'integre' })).toBeNull();
+    expect(verifierLien({ titre: 'Code', contenu: '<iframe></iframe>', affichage: 'lien' })).toMatch(/dans l’app/);
+    expect(verifierLien({ titre: 'X', contenu: 'meteo.ch', affichage: 'lien' })).toMatch(/https/);
+    expect(verifierLien({ titre: '', contenu: 'https://a.ch', affichage: 'lien' })).toMatch(/titre/);
+    expect(estHtml('  <iframe>')).toBe(true);
+  });
+
+  it('ajoute les liens par défaut aux anciens réglages', () => {
+    const d = normaliser({ ...donneesVides(), reglages: { ...donneesVides().reglages, meteoLiens: undefined } } as never);
+    expect(d.reglages.meteoLiens).toBe(LIENS_METEO_DEFAUT);
   });
 });
