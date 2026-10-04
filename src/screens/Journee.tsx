@@ -18,6 +18,7 @@ export function Journee() {
   const date = aujourdhui();
   const journee: TJournee = data.journees.find((j) => j.id === date) ?? { id: date, date, eleveIds: [] };
   const [choixEleves, setChoixEleves] = useState(journee.eleveIds.length === 0);
+  const [onglet, setOnglet] = useState<StatutEleve | 'tous'>('tous');
 
   // Avec Supabase, les téléphones des moniteurs se mettent à jour régulièrement.
   useEffect(() => {
@@ -43,11 +44,43 @@ export function Journee() {
 
   return (
     <Ecran titre={`Aujourd’hui · ${formatDate(date)}`}>
-      <Ligne style={{ flexWrap: 'nowrap' }}>
-        <Compteur libelle="En préparation" valeur={parStatut('preparation').length} couleur={C.doux} />
-        <Compteur libelle="En vol" valeur={parStatut('vol').length} couleur={C.orange} />
-        <Compteur libelle="Atterris" valeur={parStatut('atterri').length} couleur={C.vert} />
-      </Ligne>
+      {journee.eleveIds.length > 0 && (
+        <Ligne>
+          <Puce texte={`Tous (${etats.length})`} actif={onglet === 'tous'} onPress={() => setOnglet('tous')} />
+          {sections.map((sec) => (
+            <Puce
+              key={sec.statut}
+              texte={`${sec.titre} (${parStatut(sec.statut).length})`}
+              actif={onglet === sec.statut}
+              couleur={sec.statut === 'vol' ? C.orange : sec.statut === 'atterri' ? C.vert : C.primaire}
+              onPress={() => setOnglet(sec.statut)}
+            />
+          ))}
+        </Ligne>
+      )}
+
+      {journee.eleveIds.length === 0 ? (
+        <T doux>Choisissez les élèves du jour (en bas) pour suivre qui est en vol, en préparation ou atterri.</T>
+      ) : (
+        sections.filter((sec) => onglet === 'tous' || onglet === sec.statut).map((sec) => (
+          <View key={sec.statut} style={{ gap: 8 }}>
+            <Ligne style={{ justifyContent: 'space-between' }}>
+              <Titre>{sec.titre} ({parStatut(sec.statut).length})</Titre>
+              {sec.statut === 'atterri' && parStatut('atterri').length > 0 && (
+                <Bouton
+                  petit
+                  titre="↺ Tous en préparation"
+                  onPress={() => parStatut('atterri').forEach((e) => changer(e, 'preparation', []))}
+                />
+              )}
+            </Ligne>
+            {parStatut(sec.statut).length === 0 && <T doux>{sec.vide}</T>}
+            {parStatut(sec.statut).map((e) => (
+              <CarteEleve key={e.eleve.id} etat={e} onChanger={(s, ex) => changer(e, s, ex)} />
+            ))}
+          </View>
+        ))
+      )}
 
       <Ligne style={{ justifyContent: 'space-between' }}>
         <Titre>Élèves du jour ({journee.eleveIds.length})</Titre>
@@ -79,20 +112,6 @@ export function Journee() {
         </Carte>
       )}
 
-      {journee.eleveIds.length === 0 ? (
-        <T doux>Choisissez les élèves du jour pour suivre qui est en préparation, en vol ou atterri.</T>
-      ) : (
-        sections.map((sec) => (
-          <View key={sec.statut} style={{ gap: 8 }}>
-            <Titre>{sec.titre} ({parStatut(sec.statut).length})</Titre>
-            {parStatut(sec.statut).length === 0 && <T doux>{sec.vide}</T>}
-            {parStatut(sec.statut).map((e) => (
-              <CarteEleve key={e.eleve.id} etat={e} onChanger={(s, ex) => changer(e, s, ex)} />
-            ))}
-          </View>
-        ))
-      )}
-
       {mode === 'local' && (
         <T doux taille={12}>
           Mode démo : la liste n’est partagée entre les téléphones des moniteurs qu’une fois Supabase configuré
@@ -100,15 +119,6 @@ export function Journee() {
         </T>
       )}
     </Ecran>
-  );
-}
-
-function Compteur({ libelle, valeur, couleur }: { libelle: string; valeur: number; couleur: string }) {
-  return (
-    <Carte style={{ flex: 1, alignItems: 'center', gap: 0, paddingVertical: 10, paddingHorizontal: 4 }}>
-      <T gras taille={26} couleur={couleur}>{valeur}</T>
-      <T doux taille={12}>{libelle}</T>
-    </Carte>
   );
 }
 

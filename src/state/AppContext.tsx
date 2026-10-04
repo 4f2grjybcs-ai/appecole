@@ -93,6 +93,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const enregistrer = useCallback(async <K extends Kind>(kind: K, r: RecordOf[K]) => {
     const apres = appliquer(dataRef.current, kind, r);
+    // Mis à jour tout de suite : plusieurs écritures d'affilée (ex. « Tous en préparation ») se cumulent.
+    dataRef.current = apres;
     setData(apres);
     try {
       await storeRef.current.enregistrer(kind, r, apres);
@@ -103,6 +105,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const supprimer = useCallback(async (kind: Exclude<Kind, 'reglages'>, id: string) => {
     const apres = retirer(dataRef.current, kind, id);
+    // Mis à jour tout de suite : plusieurs écritures d'affilée (ex. « Tous en préparation ») se cumulent.
+    dataRef.current = apres;
     setData(apres);
     try {
       await storeRef.current.supprimer(kind, id, apres);
