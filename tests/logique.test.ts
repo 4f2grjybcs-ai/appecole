@@ -9,6 +9,7 @@ import type { Eleve, Site } from '../src/lib/types';
 import { ecartAngulaire, evaluer, parserPrevision, pointCardinal, urlPrevision, type HeureMeteo } from '../src/lib/weather';
 import { appliquer, retirer } from '../src/data/store';
 import { estHtml, LIENS_METEO_DEFAUT, verifierLien } from '../src/lib/meteoLiens';
+import { canauxVisibles, horodatage, messagesDuCanal, peutSupprimer } from '../src/lib/discussion';
 import { changerStatut, etatsDuJour, parOrdreDeDecollage } from '../src/lib/journee';
 import { encaisser, formatCHF, montantPropose, totalAPayer, totaux } from '../src/lib/paiements';
 import { REGLAGES_DEFAUT } from '../src/lib/defaults';
@@ -266,5 +267,26 @@ describe('liens météo', () => {
   it('ajoute les liens par défaut aux anciens réglages', () => {
     const d = normaliser({ ...donneesVides(), reglages: { ...donneesVides().reglages, meteoLiens: undefined } } as never);
     expect(d.reglages.meteoLiens).toBe(LIENS_METEO_DEFAUT);
+  });
+});
+
+describe('discussion', () => {
+  const msg = (id: string, canal: 'ecole' | 'moniteurs', auteurId: string, date: string) =>
+    ({ id, canal, auteurId, auteurRole: 'eleve', auteurNom: 'X', texte: 't', date }) as const;
+
+  it('sépare les canaux et trie par date', () => {
+    const l = [msg('b', 'ecole', 'e1', '2026-10-04T10:00:00'), msg('a', 'ecole', 'e2', '2026-10-03T09:00:00'), msg('c', 'moniteurs', 'm1', '2026-10-04T11:00:00')];
+    expect(messagesDuCanal(l, 'ecole').map((m) => m.id)).toEqual(['a', 'b']);
+    expect(canauxVisibles({ role: 'eleve', id: 'e1' }).map((c) => c.id)).toEqual(['ecole']);
+    expect(canauxVisibles({ role: 'moniteur', id: 'm1' }).map((c) => c.id)).toEqual(['ecole', 'moniteurs']);
+  });
+
+  it('droits de suppression et horodatage', () => {
+    const m = msg('a', 'ecole', 'e1', '2026-10-04T10:05:00');
+    expect(peutSupprimer(m, { role: 'eleve', id: 'e1' })).toBe(true);
+    expect(peutSupprimer(m, { role: 'eleve', id: 'e2' })).toBe(false);
+    expect(peutSupprimer(m, { role: 'moniteur', id: 'm1' })).toBe(true);
+    expect(horodatage(m.date, '2026-10-04')).toBe('10:05');
+    expect(horodatage(m.date, '2026-10-05')).toBe('04.10.2026 10:05');
   });
 });

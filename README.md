@@ -19,6 +19,8 @@ selon les directives de formation FSVL.
   compétences acquises.
 - **Liens et contenus météo** gérés par les moniteurs depuis l'app : boutons vers des sites, ou pages,
   webcams et codes d'intégration (<iframe>, ex. Windy) affichés directement dans l'écran Météo.
+- **Discussion** : canal École (moniteurs et élèves) et canal Moniteurs (réservé aux moniteurs).
+- **Navigation** : 3 boutons principaux en bas de l'écran et un menu ☰ pour le reste.
 - **Coin météo** : prévisions heure par heure pour chaque site (vent, rafales, vent vers 1500 m,
   pluie, instabilité), avec une indication favorable / limite / défavorable selon les seuils de
   l'école et l'orientation du décollage. Données Open-Meteo (modèles MeteoSwiss), sans clé d'API.
@@ -71,20 +73,32 @@ de l'élève : n'y mettez rien que l'élève ne devrait pas pouvoir lire.
 ## Publier sur l'App Store et Google Play
 
 Prérequis : un compte [Apple Developer](https://developer.apple.com/programs/) (99 USD / an)
-et un compte [Google Play Console](https://play.google.com/console) (25 USD, une fois),
-idéalement au nom de l'école.
+et, pour Android, un compte [Google Play Console](https://play.google.com/console) (25 USD, une fois),
+idéalement au nom de l'école. Un compte gratuit [expo.dev](https://expo.dev) sert à compiler l'app
+dans le cloud (pas besoin de Xcode).
 
-```bash
-npm install -g eas-cli
-eas login              # compte gratuit expo.dev
-eas build:configure
-eas build --platform all
-eas submit --platform all
-```
+1. Renseigner `EXPO_PUBLIC_SUPABASE_URL` et `EXPO_PUBLIC_SUPABASE_ANON_KEY` dans `eas.json`
+   (profils `preview` et `production`). **Sans ces valeurs, l'app compilée démarre en mode démo.**
+2. Vérifier le nom de l'app (`name`), l'identifiant (`ios.bundleIdentifier`, `android.package`) et les
+   icônes dans `app.json` / `assets/`.
+3. Depuis le dossier du projet :
 
-Avant la première publication : remplacez les icônes dans `assets/`, vérifiez
-`bundleIdentifier` / `package` dans `app.json` (`ch.appecole.parapente`), et préparez une
+   ```bash
+   npx eas-cli@latest login
+   npx eas-cli@latest init
+   npx eas-cli@latest build --platform ios --profile production
+   npx eas-cli@latest submit --platform ios
+   ```
+
+4. Dans [App Store Connect](https://appstoreconnect.apple.com) → TestFlight : créer un groupe de testeurs
+   externes et activer le **lien public** à envoyer aux élèves (première validation Apple : ~1 jour).
+5. Android : `npx eas-cli@latest build --platform android --profile preview` produit un fichier APK
+   installable directement ; `--profile production` + `submit` pour le Google Play Store.
+
+Pour la publication sur l'App Store (et non seulement TestFlight) : captures d'écran, description et
 politique de confidentialité (l'app stocke des données personnelles d'élèves : LPD suisse).
+Pour les e-mails de connexion, configurer un serveur SMTP dans Supabase (Authentication → SMTP) :
+l'envoi intégré de Supabase est limité à quelques e-mails par heure.
 
 ## Développement
 

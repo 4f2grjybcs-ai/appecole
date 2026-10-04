@@ -43,7 +43,7 @@ create table if not exists public.records (
 -- Types d'enregistrements autorisés (mis à jour si le schéma a déjà été installé)
 alter table public.records drop constraint if exists records_kind_check;
 alter table public.records add constraint records_kind_check
-  check (kind in ('moniteur', 'eleve', 'vol', 'validation', 'seance', 'journee', 'statut', 'reglages'));
+  check (kind in ('moniteur', 'eleve', 'vol', 'validation', 'seance', 'journee', 'statut', 'message', 'reglages'));
 
 create index if not exists records_eleve on public.records (ecole_id, eleve_id);
 
@@ -138,6 +138,30 @@ create policy vols_eleves_suppression on public.records for delete
     ecole_id = public.mon_ecole() and public.mon_role() = 'eleve'
     and kind = 'vol' and eleve_id = public.ma_personne()
     and not (data ? 'paiement')
+  );
+
+-- Discussion : les élèves lisent et écrivent dans le canal « ecole » (pas dans « moniteurs »)
+-- et peuvent supprimer leurs propres messages.
+drop policy if exists messages_eleves_lecture on public.records;
+create policy messages_eleves_lecture on public.records for select
+  using (
+    ecole_id = public.mon_ecole() and public.mon_role() = 'eleve'
+    and kind = 'message' and data ->> 'canal' = 'ecole'
+  );
+
+drop policy if exists messages_eleves_ajout on public.records;
+create policy messages_eleves_ajout on public.records for insert
+  with check (
+    ecole_id = public.mon_ecole() and public.mon_role() = 'eleve'
+    and kind = 'message' and data ->> 'canal' = 'ecole'
+    and data ->> 'auteurId' = public.ma_personne() and data ->> 'auteurRole' = 'eleve'
+  );
+
+drop policy if exists messages_eleves_suppression on public.records;
+create policy messages_eleves_suppression on public.records for delete
+  using (
+    ecole_id = public.mon_ecole() and public.mon_role() = 'eleve'
+    and kind = 'message' and data ->> 'auteurId' = public.ma_personne()
   );
 
 -- Création d'une école par son premier moniteur.

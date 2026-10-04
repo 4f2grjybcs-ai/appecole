@@ -28,6 +28,7 @@ export function donneesVides(): AppData {
     seances: [],
     journees: [],
     statuts: [],
+    messages: [],
     reglages: REGLAGES_DEFAUT,
   };
 }
@@ -72,6 +73,7 @@ export function normaliser(d: AppData): AppData {
     seances: d.seances.map(migrer),
     journees: d.journees ?? [],
     statuts: d.statuts ?? [],
+    messages: d.messages ?? [],
     eleves: d.eleves.map((e) => {
       const { assuranceValidite: _, ...reste } = e as typeof e & { assuranceValidite?: string };
       return reste;

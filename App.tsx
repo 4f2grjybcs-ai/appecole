@@ -1,8 +1,9 @@
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, BackHandler, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, BackHandler, Modal, Pressable, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Connexion } from './src/screens/Connexion';
+import { Discussion } from './src/screens/Discussion';
 import { Eleves } from './src/screens/Eleves';
 import { Journee } from './src/screens/Journee';
 import { Encaisser } from './src/screens/Encaisser';
@@ -18,21 +19,24 @@ import { AppProvider, useApp } from './src/state/AppContext';
 import { C } from './src/ui/kit';
 import { NavContext, type Nav, type Route } from './src/ui/nav';
 
-type Onglet = { id: string; libelle: string; icone: string };
+/** principal = bouton dans la barre du bas ; les autres sont dans le menu ☰. */
+type Onglet = { id: string; libelle: string; icone: string; principal?: boolean };
 
 const ONGLETS_MONITEUR: Onglet[] = [
-  { id: 'journee', libelle: 'Aujourd’hui', icone: '📋' },
-  { id: 'eleves', libelle: 'Élèves', icone: '🎓' },
-  { id: 'vols', libelle: 'Vols', icone: '🪂' },
-  { id: 'planning', libelle: 'Planning', icone: '📅' },
-  { id: 'meteo', libelle: 'Météo', icone: '🌤' },
+  { id: 'journee', libelle: 'Aujourd’hui', icone: '📋', principal: true },
+  { id: 'eleves', libelle: 'Élèves', icone: '🎓', principal: true },
+  { id: 'meteo', libelle: 'Météo', icone: '🌤', principal: true },
+  { id: 'vols', libelle: 'Vols et paiements', icone: '🪂' },
+  { id: 'planning', libelle: 'Agenda', icone: '📅' },
+  { id: 'discussion', libelle: 'Discussion', icone: '💬' },
   { id: 'reglages', libelle: 'Réglages', icone: '⚙️' },
 ];
 
 const ONGLETS_ELEVE: Onglet[] = [
-  { id: 'formation', libelle: 'Ma formation', icone: '🪂' },
+  { id: 'formation', libelle: 'Ma formation', icone: '🪂', principal: true },
+  { id: 'meteo', libelle: 'Météo', icone: '🌤', principal: true },
+  { id: 'discussion', libelle: 'Discussion', icone: '💬', principal: true },
   { id: 'planning', libelle: 'Séances', icone: '📅' },
-  { id: 'meteo', libelle: 'Météo', icone: '🌤' },
   { id: 'compte', libelle: 'Compte', icone: '👤' },
 ];
 
@@ -82,6 +86,13 @@ function Principal() {
   }, [pile.length, retour]);
 
   const route = pile[pile.length - 1];
+  const [menuOuvert, setMenuOuvert] = useState(false);
+  const courantSecondaire = onglets.find((o) => o.id === onglet && !o.principal);
+  const aller = (id: string) => {
+    setOnglet(id);
+    setPile([]);
+    setMenuOuvert(false);
+  };
 
   return (
     <NavContext.Provider value={nav}>
@@ -99,25 +110,49 @@ function Principal() {
       </View>
       <SafeAreaView edges={['bottom']} style={{ backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: C.bord }}>
         <View style={{ flexDirection: 'row' }}>
-          {onglets.map((o) => {
-            const actif = o.id === onglet;
-            return (
-              <Pressable
-                key={o.id}
-                onPress={() => {
-                  setOnglet(o.id);
-                  setPile([]);
-                }}
-                style={{ flex: 1, alignItems: 'center', paddingVertical: 8 }}
-              >
-                <Text style={{ fontSize: 20, opacity: actif ? 1 : 0.5 }}>{o.icone}</Text>
-                <Text style={{ fontSize: 11, color: actif ? C.primaire : C.doux, fontWeight: actif ? '700' : '400' }}>{o.libelle}</Text>
-              </Pressable>
-            );
-          })}
+          {onglets.filter((o) => o.principal).map((o) => (
+            <BoutonBarre key={o.id} icone={o.icone} libelle={o.libelle} actif={o.id === onglet} onPress={() => aller(o.id)} />
+          ))}
+          <BoutonBarre
+            icone="☰"
+            libelle={courantSecondaire ? courantSecondaire.libelle : 'Menu'}
+            actif={!!courantSecondaire || menuOuvert}
+            onPress={() => setMenuOuvert(true)}
+          />
         </View>
       </SafeAreaView>
+
+      <Modal visible={menuOuvert} transparent animationType="slide" onRequestClose={() => setMenuOuvert(false)}>
+        <Pressable style={{ flex: 1, backgroundColor: 'rgba(20,32,43,0.4)' }} onPress={() => setMenuOuvert(false)} />
+        <SafeAreaView edges={['bottom']} style={{ backgroundColor: '#fff', borderTopLeftRadius: 18, borderTopRightRadius: 18 }}>
+          <View style={{ padding: 8 }}>
+            <View style={{ alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: C.bord, marginVertical: 6 }} />
+            {onglets.filter((o) => !o.principal).map((o) => (
+              <Pressable
+                key={o.id}
+                onPress={() => aller(o.id)}
+                style={({ pressed }) => ({
+                  flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14, paddingHorizontal: 16, borderRadius: 10,
+                  backgroundColor: o.id === onglet ? C.fond : pressed ? C.fond : 'transparent',
+                })}
+              >
+                <Text style={{ fontSize: 22 }}>{o.icone}</Text>
+                <Text style={{ fontSize: 17, color: o.id === onglet ? C.primaire : C.texte, fontWeight: o.id === onglet ? '700' : '500' }}>{o.libelle}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </SafeAreaView>
+      </Modal>
     </NavContext.Provider>
+  );
+}
+
+function BoutonBarre({ icone, libelle, actif, onPress }: { icone: string; libelle: string; actif: boolean; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={libelle} style={{ flex: 1, alignItems: 'center', paddingVertical: 8 }}>
+      <Text style={{ fontSize: 22, opacity: actif ? 1 : 0.55, color: C.texte }}>{icone}</Text>
+      <Text numberOfLines={1} style={{ fontSize: 12, color: actif ? C.primaire : C.doux, fontWeight: actif ? '700' : '400' }}>{libelle}</Text>
+    </Pressable>
   );
 }
 
@@ -130,6 +165,7 @@ function EcranOnglet({ onglet }: { onglet: string }) {
     case 'vols': return <Vols />;
     case 'planning': return <Planning />;
     case 'meteo': return <Meteo />;
+    case 'discussion': return <Discussion />;
     case 'reglages': return <Reglages />;
     default: return <Compte />;
   }

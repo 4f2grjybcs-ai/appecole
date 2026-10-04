@@ -182,7 +182,23 @@ export interface AppData {
   journees: Journee[];
   /** Statut de chaque élève du jour (préparation, en vol, atterri) */
   statuts: StatutJour[];
+  /** Messages de la discussion */
+  messages: Message[];
   reglages: Reglages;
+}
+
+export type Canal = 'ecole' | 'moniteurs';
+
+/** Message de la discussion : canal École (tout le monde) ou Moniteurs (moniteurs seulement). */
+export interface Message {
+  id: Id;
+  canal: Canal;
+  auteurId: Id;
+  auteurRole: 'moniteur' | 'eleve';
+  auteurNom: string;
+  texte: string;
+  /** Date et heure ISO */
+  date: string;
 }
 
 /** Élèves du jour, choisis par le moniteur. */

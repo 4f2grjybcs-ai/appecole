@@ -76,6 +76,11 @@ export function donneesDemo(): AppData {
     ],
     vols,
     validations,
+    messages: [
+      { id: 'msg-1', canal: 'ecole', auteurId: 'm-marc', auteurRole: 'moniteur', auteurNom: 'Marc Exemple', texte: 'Demain grands vols à Amisbühl, rendez-vous 8h15 à la Höhematte. Prenez vos gants !', date: `${jour(-1)}T17:30:00` },
+      { id: 'msg-2', canal: 'ecole', auteurId: 'e-lea', auteurRole: 'eleve', auteurNom: 'Léa Démo', texte: 'Super, je serai là 👍', date: `${jour(-1)}T18:02:00` },
+      { id: 'msg-3', canal: 'moniteurs', auteurId: 'm-anna', auteurRole: 'moniteur', auteurNom: 'Anna Exemple', texte: 'Je prends le décollage le matin, tu fais l’atterrissage ?', date: `${jour(0)}T07:45:00` },
+    ],
     journees: [{ id: jour(0), date: jour(0), eleveIds: ['e-lea', 'e-tom', 'e-nina'] }],
     statuts: [
       { id: `${jour(0)}:e-lea`, date: jour(0), eleveId: 'e-lea', statut: 'vol', exercices: ['oreilles'], ordre: 1 },

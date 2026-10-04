@@ -1,7 +1,7 @@
-import type { AppData, Eleve, Journee, Moniteur, Reglages, Seance, StatutJour, ValidationCompetence, Vol } from '../lib/types';
+import type { AppData, Eleve, Journee, Moniteur, Reglages, Message, Seance, StatutJour, ValidationCompetence, Vol } from '../lib/types';
 
 /** Types d'enregistrements stockés, avec la clé de collection dans AppData. */
-export type Kind = 'moniteur' | 'eleve' | 'vol' | 'validation' | 'seance' | 'journee' | 'statut' | 'reglages';
+export type Kind = 'moniteur' | 'eleve' | 'vol' | 'validation' | 'seance' | 'journee' | 'statut' | 'message' | 'reglages';
 
 export interface RecordOf {
   moniteur: Moniteur;
@@ -11,6 +11,7 @@ export interface RecordOf {
   seance: Seance;
   journee: Journee;
   statut: StatutJour;
+  message: Message;
   reglages: Reglages;
 }
 
@@ -22,6 +23,7 @@ export const COLLECTION = {
   seance: 'seances',
   journee: 'journees',
   statut: 'statuts',
+  message: 'messages',
 } as const;
 
 export function idOf<K extends Kind>(kind: K, r: RecordOf[K]): string {
